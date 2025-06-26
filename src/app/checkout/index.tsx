@@ -16,17 +16,17 @@ import {
   PublicKey, clusterApiUrl,
   LAMPORTS_PER_SOL
 } from "@solana/web3.js";
-import { useSendTransaction, useSolanaWallets } from "@privy-io/react-auth/solana";
+import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import { usePrivy } from "@privy-io/react-auth";
 import { useAlert } from "@/context/AlertContext";
-import { updateOrder } from "@/lib/ServerActions/orders";
+import { deleteOrder, updateOrder, uploadOrder } from "@/lib/ServerActions/orders";
 import { AddressForm, CartItem } from "@/interfaces";
 import { useCurrencies } from "@/context/CurrenciesContext";
 
 const CheckoutPage = ({ items, clearCart }: { items: CartItem[], clearCart?: () => void }) => {
   const { user } = usePrivy();
   const { wallets } = useSolanaWallets();
-  const { sendTransaction } = useSendTransaction();
+
 
   const { userCurrency, listCryptoCurrencies } = useCurrencies()
 
@@ -79,13 +79,7 @@ const CheckoutPage = ({ items, clearCart }: { items: CartItem[], clearCart?: () 
 
   // Function to complete the checkout process
   const completeCheckout = async (signature: string, orderId: string) => {
-    if (!user) {
-      handleAlert({
-        message: "You need to be logged in to complete the purchase",
-        isError: true
-      })
-      return
-    }
+
     setLoading(true);
     setPaymentStage("confirmed")
     try {
@@ -107,14 +101,6 @@ const CheckoutPage = ({ items, clearCart }: { items: CartItem[], clearCart?: () 
   // Function to handle payment form submission
   const handleSubmitPayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) {
-      handleAlert({
-        message: "You need to be logged in to complete the purchase",
-        isError: true
-      })
-      return
-    }
-
     setLoading(true)
     if (!selectedPayment) {
       handleAlert({
@@ -136,21 +122,19 @@ const CheckoutPage = ({ items, clearCart }: { items: CartItem[], clearCart?: () 
     }
 
     try {
-      const orderId = await (await fetch("/api/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const orderId = await uploadOrder({
+        date: new Date(),
+        buyer: {
+          walletAddress: wallet.address,
+          _id: user?.id
         },
-        body: JSON.stringify({
-          date: new Date(),
-          buyerId: user?.id,
-          encryptedAddress: address,
-          status: "processing",
-          // totalPrice,
-          sellers: [...(new Set(items.map((item: CartItem) => item.seller)))],
-          items: items.map((item: CartItem) => ({ _id: item._id, price: item.price, quantity: item.quantity, name: item.name, image: item.mainImage, currency: item.currency }))
-        })
-      })).json();
+        encryptedAddress: address,
+        status: "processing",
+        // totalPrice,
+        sellers: [...(new Set(items.map((item: CartItem) => item.seller)))],
+        items: items.map((item: CartItem) => ({ _id: item._id.toString(), price: item.price, quantity: item.quantity, name: item.name, image: item.mainImage, currency: item.currency }))
+      })
+
 
       const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
       const { blockhash: recentBlockhash } = await connection.getLatestBlockhash();
@@ -158,7 +142,7 @@ const CheckoutPage = ({ items, clearCart }: { items: CartItem[], clearCart?: () 
         const { addressWallet, price, quantity, currency, offerPercentage } = item;
         const priceProductToDollar = listCryptoCurrencies.find(curr => curr.symbol === currency) || { price: 1 }
 
-         const totalAmount = (price * (1 - ((offerPercentage || 1) / 100)) * priceProductToDollar?.price) * quantity
+        const totalAmount = (price * (1 - ((offerPercentage || 1) / 100)) * priceProductToDollar?.price) * quantity
         return {
           ...acc,
           [addressWallet]: {
@@ -191,18 +175,20 @@ const CheckoutPage = ({ items, clearCart }: { items: CartItem[], clearCart?: () 
       transaction.recentBlockhash = recentBlockhash;
 
       transaction.feePayer = new PublicKey(wallet.address);
-      const transactionReceipt = await sendTransaction({
+      const transactionReceipt = await wallet.sendTransaction(
         transaction,
         connection
-      });
+      );
 
       setPaymentStage("confirmed");
 
       if (transactionReceipt) {
-        completeCheckout(transactionReceipt.signature, orderId);
+        completeCheckout(transactionReceipt, orderId);
         return;
       }
     } catch (error) {
+
+      deleteOrder({ _id: orderNumber })
       console.error("Error processing payment:", error);
       setPaymentError(true)
       handleAlert({

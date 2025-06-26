@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 
 const slides = [
   {
-    id: 1,
+    id: "welcome",
     image: '/hero-slide-1.jpg',
     alt: 'Marketplace hero image',
     title: 'Welcome to Going',
@@ -41,14 +41,14 @@ const slides = [
 
   },
   {
-    id: 2,
+    id: "shoppingExperience",
     image: '/hero-slide-2.jpg',
     alt: 'Shopping experience',
     title: 'Buy and sell easily',
     subtitle: 'With the security of the Solana blockchain',
   },
   {
-    id: 3,
+    id: "cryptoPayments",
     image: '/hero-slide-3.jpg',
     alt: 'Crypto payments',
     title: 'Instant payments',
@@ -58,47 +58,47 @@ const slides = [
 
 export default function HeroSlider() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
+  // const [isAnimating, setIsAnimating] = useState(false);
 
   // Auto-rotate slides
   useEffect(() => {
     const interval = setInterval(() => {
-      if (!isAnimating) {
+      // if (!isAnimating) {
         changeSlide((prev) => (prev + 1) % slides.length);
-      }
+      // }
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [isAnimating]);
+  }, []);
 
   // Handle slide change with animation state
   const changeSlide = (getNextIndex: (prev: number) => number) => {
-    setIsAnimating(true);
+    // setIsAnimating(true);
     setCurrentSlide(getNextIndex);
 
     // Reset animation state after transition completes
-    setTimeout(() => {
-      setIsAnimating(false);
-    }, 1500);
+    // setTimeout(() => {
+    //   setIsAnimating(false);
+    // }, 1500);
   };
 
   // Manual navigation
   const goToSlide = (index: number) => {
-    if (!isAnimating && index !== currentSlide) {
+    // if (!isAnimating && index !== currentSlide) {
       changeSlide(() => index);
-    }
+    // }
   };
 
   const nextSlide = () => {
-    if (!isAnimating) {
+    // if (!isAnimating) {
       changeSlide((prev) => (prev + 1) % slides.length);
-    }
+    // }
   };
 
   const prevSlide = () => {
-    if (!isAnimating) {
+    // if (!isAnimating) {
       changeSlide((prev) => (prev - 1 + slides.length) % slides.length);
-    }
+    // }
   };
 
   return (
@@ -149,7 +149,7 @@ export default function HeroSlider() {
         onClick={prevSlide}
         className="absolute left-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/40 rounded-full p-2 transition-all duration-300"
         aria-label="Previous slide"
-        disabled={isAnimating}
+        // disabled={isAnimating}
       >
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-white">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -160,7 +160,7 @@ export default function HeroSlider() {
         onClick={nextSlide}
         className="absolute right-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/40 rounded-full p-2 transition-all duration-300"
         aria-label="Next slide"
-        disabled={isAnimating}
+        // disabled={isAnimating}
       >
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-white">
           <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
@@ -176,7 +176,7 @@ export default function HeroSlider() {
             className={`w-3 h-3 rounded-full transition-all duration-300 ${index === currentSlide ? 'bg-white w-6' : 'bg-white/50'
               }`}
             aria-label={`Go to slide ${index + 1}`}
-            disabled={isAnimating}
+            // disabled={isAnimating}
           />
         ))}
       </div>

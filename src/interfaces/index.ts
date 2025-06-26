@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb";
 
 export interface User {
-  _id: string;
+  _id: ObjectId | string;
   name: string;
   addresses: Addresses[];
   email: string;
@@ -15,7 +15,8 @@ export interface User {
   instagram: string;
   telegram: string;
   facebook: string;
-  isSeller: boolean
+  isSeller: boolean;
+  wishlist: string[];
   settings: {
     theme: "light" | "dark" | "system";
     currency: string;
@@ -48,7 +49,7 @@ export interface CreateProduct {
 }
 
 export interface Product {
-  _id: string | ObjectId;
+  _id: ObjectId | string;
   seller: string;
   name: string;
   addressWallet: string;
@@ -62,7 +63,7 @@ export interface Product {
   stock: number;
   location?: string;
   condition?: string;
-  tags?: string;
+  tags?: string[];
   isService?: boolean;
   isFeatured?: boolean;
   isOffer?: boolean;
@@ -75,7 +76,7 @@ export interface Product {
 }
 
 export interface CartItem extends Partial<Product> {
-  _id: string | ObjectId;
+  _id: ObjectId;
   seller: string;
   name: string;
   price: number;
@@ -89,14 +90,17 @@ export interface CartItem extends Partial<Product> {
 }
 
 export interface Order {
-  _id: string;
+  _id: ObjectId | string;
   date: Date;
   status: string;
-  buyerId: string;
-  encryptedAddress: AddressForm;
+  buyer: {
+    walletAddress: string;
+    _id?: string;
+  };
+  decryptedAddress?: AddressForm;
   sellers: string[];
   signature: string;
-  totalPrice: number;
+  // totalPrice: number;
   items: {
     _id: string;
     price: number;
@@ -105,6 +109,10 @@ export interface Order {
     image: string;
     currency: string;
   }[];
+}
+
+export interface OrderWithEncryptedAddress extends Omit<Order, 'decryptedAddress'> {
+  encryptedAddress: EncryptedData;
 }
 
 export interface AddressForm {
@@ -116,6 +124,12 @@ export interface AddressForm {
   country: string;
   phone: string;
   email: string;
+}
+
+export interface EncryptedData {
+  iv: string;
+  content: string;
+  tag: string;
 }
 
 export interface Reviews {

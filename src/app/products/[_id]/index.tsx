@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { StarIcon, ShoppingCartIcon, HeartIcon, CreditCardIcon } from "@heroicons/react/24/outline";
@@ -9,17 +9,24 @@ import { useCart } from "@/context/CartContext";
 import { Product, User } from "@/interfaces";
 import { useRouter } from "next/navigation";
 import { useCurrencies } from "@/context/CurrenciesContext";
+import { updateUser } from "@/lib/ServerActions/users";
+import { useUser } from "@/context/UserContext";
+import { useAlert } from "@/context/AlertContext";
+import { getProducts } from "@/lib/ServerActions/products";
+import ProductCard from "@/components/products/ProductCard";
+
 
 const ProductDetail = ({ product, seller }: { product: Product, seller?: User | null }) => {
+  const { userData, setUserData } = useUser();
   const [selectedImage, setSelectedImage] = useState(0);
   const router = useRouter()
   const { addToCart } = useCart();
-  const {listCryptoCurrencies, userCurrency} = useCurrencies();
+  const { listCryptoCurrencies, userCurrency } = useCurrencies();
+  const { handleAlert } = useAlert()
 
   const [quantity, setQuantity] = useState(1);
-  const [isWishlist, setIsWishlist] = useState(false);
 
-  // const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
 
   const nameCategories = {
     electronics: "Electronics",
@@ -32,6 +39,29 @@ const ProductDetail = ({ product, seller }: { product: Product, seller?: User | 
     namservicese: "Services",
     other: "Other",
   };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const productNameWords = product.name
+          .toLowerCase()
+          .replace(/[^\w\s]/g, '')
+          .split(/\s+/)
+          .filter(w => w.length > 2);
+        const resRelatedProducts = await getProducts({
+          _id: { $ne: product._id },
+          $or: [
+            { tags: { $in: product.tags } },
+            { name: { $regex: productNameWords.join('|'), $options: 'i' } }
+          ]
+        })
+        console.log("rproducts", resRelatedProducts)
+        setRelatedProducts(resRelatedProducts.filter((p) => p._id !== product._id))
+      } catch (error) {
+        console.error("Error fetching related products:", error);
+      }
+    })();
+  }, [])
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -50,8 +80,42 @@ const ProductDetail = ({ product, seller }: { product: Product, seller?: User | 
     }
   };
 
-  const toggleWishlist = () => {
-    setIsWishlist(!isWishlist);
+  const toggleWishlist = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (userData._id === "") return handleAlert({
+      isError: true,
+      message: "Please log in to add products to your wishlist."
+    });
+    if (!userData.wishlist.includes(product._id.toString())) {
+      const updateWishList = await updateUser({
+        _id: userData._id,
+        wishlist: [...userData.wishlist, product._id.toString()],
+      })
+      if (updateWishList.status) {
+        console.log("wishlist updates")
+        setUserData((prevData) => ({
+          ...prevData,
+          wishlist: [...prevData.wishlist, product._id.toString()],
+        }));
+      } else {
+        console.error("Error updating wishlist:", updateWishList.error);
+      }
+    } else {
+      const updateWishList = await updateUser({
+        _id: userData._id,
+        wishlist: removeFromWishlist(product),
+      })
+      if (updateWishList.status) {
+        setUserData((prevData) => ({
+          ...prevData,
+          wishlist: removeFromWishlist(product),
+        }));
+      }
+    }
+  };
+
+  const removeFromWishlist = (product: Product) => {
+    return userData.wishlist.filter(item => item !== product._id.toString());
   };
 
   return (
@@ -125,7 +189,7 @@ const ProductDetail = ({ product, seller }: { product: Product, seller?: User | 
               onClick={toggleWishlist}
               className="absolute top-3 right-3 p-2 bg-white/80 dark:bg-gray-800/80 rounded-full shadow hover:bg-white dark:hover:bg-gray-700 z-10"
             >
-              {isWishlist ? (
+              {userData.wishlist.includes(product._id.toString()) ? (
                 <HeartSolidIcon className="h-4 w-4 text-[#D300E5]" />
               ) : (
                 <HeartIcon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
@@ -148,7 +212,7 @@ const ProductDetail = ({ product, seller }: { product: Product, seller?: User | 
                   ))}
                 </div>
                 <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-                  {product?.rating?.toFixed(1)} ({product.reviews||0} reviews)
+                  {product?.rating?.toFixed(1)} ({product.reviews || 0} reviews)
                 </span>
               </div>
 
@@ -260,50 +324,16 @@ const ProductDetail = ({ product, seller }: { product: Product, seller?: User | 
         )}
 
         {/* Related products */}
-        {/* {relatedProducts.length > 0 && (
+        {!!relatedProducts.length && (
           <div className="mt-16">
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">Related Products</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {relatedProducts.map((product) => (
-                <div key={product._id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-                  <Link href={`/products/${product.slug}`} className="block">
-                    <div className="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-700">
-                      <Image
-                        src={product.images?.[0] || product.image || "https://via.placeholder.com/400"}
-                        alt={product.name}
-                        fill
-                        className="object-cover hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                    <div className="p-4">
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1 truncate">{product.name}</h3>
-                      <div className="flex items-center mb-2">
-                        <div className="flex">
-                          {[...Array(5)].map((_, i) => (
-                            i < Math.floor(product.rating) ? (
-                              <StarSolidIcon key={i} className="h-4 w-4 text-yellow-400" />
-                            ) : (
-                              <StarIcon key={i} className="h-4 w-4 text-gray-300 dark:text-gray-600" />
-                            )
-                          ))}
-                        </div>
-                        <span className="ml-1 text-xs text-gray-600 dark:text-gray-400">
-                          ({product.reviews})
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-lg font-bold text-gray-900 dark:text-white">${product.price.toFixed(2)}</span>
-                        <button className="p-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                          <ShoppingCartIcon className="h-5 w-5" />
-                        </button>
-                      </div>
-                    </div>
-                  </Link>
-                </div>
+                <ProductCard key={product._id.toString()} product={{ ...product, _id: product._id.toString() }} />
               ))}
             </div>
           </div>
-        )} */}
+        )}
       </div>
     </div>
   );

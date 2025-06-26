@@ -30,20 +30,27 @@ export const metadata: Metadata = {
     siteName: 'GOING',
     images: [
       {
-        url: 'https://going-taupe.vercel.app/logo.png', // Must be an absolute URL
+        url: 'https://going-taupe.vercel.app/logo.png',
         width: 800,
         height: 600,
+        alt: 'GOING Logo'
       }
     ],
-
-    locale: 'en_US',
+    locale: 'es_ES',
     type: 'website',
   },
-    twitter: {
+  twitter: {
     card: "summary",
     title: "GOING — The Decentralized Marketplace",
     description: "Experience the future of commerce with GOING. Try the live demo now.",
-    images: ["https://going-taupe.vercel.app/logo.png"],
+    images: [{
+      url: "https://going-taupe.vercel.app/logo.png",
+      width: 800,
+      height: 600,
+      alt: 'GOING Logo'
+    }],
+    site: "@GOING",
+    creator: "@GOING"
   }
 };
 

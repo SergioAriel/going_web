@@ -83,7 +83,7 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
     
     await db.collection<User>("users").updateOne(
         { _id: productDb.seller  },
-        { $push: { products: product.insertedId }}
+        { $push: { products: product.insertedId.toString() }}
     );
     console.log("Product added successfully:", product);
     // Return the result

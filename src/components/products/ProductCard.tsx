@@ -3,27 +3,64 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { StarIcon, ShoppingCartIcon, HeartIcon, ShoppingBagIcon, HeartIcon as HeartSolidIcon, PlusIcon, StarIcon as StarSolidIcon } from "@heroicons/react/24/outline";
+import { HeartIcon as HeartSolidIcon } from "@heroicons/react/24/solid";
 // import { HeartIcon as HeartSolidIcon, PlusIcon, StarIcon as StarSolidIcon } from "@heroicons/react/24/outline";
 import { useCart } from "@/context/CartContext";
 import { Product } from "@/interfaces";
 import { useCurrencies } from "@/context/CurrenciesContext";
 import { Tooltip } from "@material-tailwind/react";
-import { InformationCircleIcon } from "@heroicons/react/24/outline";
+import { InformationCircleIcon, StarIcon, ShoppingCartIcon, ShoppingBagIcon, HeartIcon, PlusIcon, StarIcon as StarSolidIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
+import { updateUser } from "@/lib/ServerActions/users";
+import { useUser } from "@/context/UserContext";
+import { useAlert } from "@/context/AlertContext";
 
 
 // Product Card Component with Add to Cart functionality
 const ProductCard = ({ product }: { product: Product }) => {
   const router = useRouter()
+  const { userData, setUserData } = useUser();
   const { addToCart } = useCart();
   const { listCryptoCurrencies, userCurrency } = useCurrencies();
-  const [isWishlist, setIsWishlist] = useState(false);
+  const { handleAlert } = useAlert();
   const [convertedPrice, setConvertedPrice] = useState<number>(0)
 
-  const toggleWishlist = (e: React.MouseEvent) => {
+  const toggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
-    setIsWishlist(!isWishlist);
+    if(userData._id === "") return handleAlert({
+      isError: true,
+      message: "Please log in to add products to your wishlist."
+    });
+    if(!userData.wishlist.includes(product._id.toString())) {
+      const updateWishList = await updateUser({
+        _id: userData._id,
+        wishlist: [...userData.wishlist, product._id.toString()],
+      })
+      if (updateWishList.status) {
+        console.log("wishlist updates")
+        setUserData((prevData) => ({
+          ...prevData,
+          wishlist: [...prevData.wishlist, product._id.toString()],
+        }));
+      }else {
+        console.error("Error updating wishlist:", updateWishList.error);
+      }
+    } else {
+      const updateWishList = await updateUser({
+        _id: userData._id,
+        wishlist: removeFromWishlist(product),
+      })
+      if (updateWishList.status) {
+        setUserData((prevData) => ({
+          ...prevData,
+          wishlist: removeFromWishlist(product),
+        }));
+      }
+    }
+  };
+
+  const removeFromWishlist = (product: Product) => {
+    return userData.wishlist.filter(item => item !== product._id.toString());
   };
 
   const handleAddToCart = (e: React.MouseEvent<HTMLElement>) => {
@@ -41,9 +78,6 @@ const ProductCard = ({ product }: { product: Product }) => {
     e.stopPropagation();
     router.push(`/checkout/${product._id}/${1}`)
   }
-
-  console.log(userCurrency.price)
-
 
   return (
     <Link href={`/products/${product?._id}`} className="block group">
@@ -65,7 +99,7 @@ const ProductCard = ({ product }: { product: Product }) => {
               onClick={toggleWishlist}
               className="absolute top-3 left-3 p-2 bg-white/80 dark:bg-gray-800/80 rounded-full shadow hover:bg-white dark:hover:bg-gray-700 z-10"
             >
-              {isWishlist ? (
+              {userData.wishlist.includes(product._id.toString()) ? (
                 <HeartSolidIcon className="h-4 w-4 text-[#D300E5]" />
               ) : (
                 <HeartIcon className="h-4 w-4 text-gray-600 dark:text-gray-400" />

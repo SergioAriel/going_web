@@ -29,7 +29,7 @@ const UploadProduct = () => {
     location: "",
     condition: "",
     images: [] as Array<File>,
-    tags: "",
+    tags: [],
     isService: false,
     addressWallet: "",
   });
@@ -61,7 +61,7 @@ const UploadProduct = () => {
       return;
     }
     if (name === "tags") {
-      setInfoProduct(prev => ({ ...prev, [name]: value.split(",").map((tag: string) => tag.trim()).join(", ") }));
+      setInfoProduct(prev => ({ ...prev, [name]: value.split(",").map((tag: string) => tag.trim().toLocaleLowerCase())}));
       return;
     }
     setInfoProduct(prev => ({ ...prev, [name]: value }));

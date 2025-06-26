@@ -48,10 +48,10 @@ const ProfileContent = () => {
   const searchParams = useSearchParams()
   const tabParams = searchParams.get('tab')
 
-  const [activeTab, setActiveTab] = useState(tabParams || "settings");  
+  const [activeTab, setActiveTab] = useState(tabParams || "settings");
 
   useEffect(() => {
-    if(!ready || !authenticated) {
+    if (!ready || !authenticated) {
       setActiveTab("settings")
       return
     } else {
@@ -95,6 +95,10 @@ const ProfileContent = () => {
     }
   }
 
+
+  const availableTabsOffline = ["settings", "orders"]
+
+
   return (
 
     <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-10">
@@ -137,13 +141,13 @@ const ProfileContent = () => {
                           }
                           setActiveTab(tab.id)
                         }}
-                        disabled={(!(ready && authenticated)) && tab.id !== "settings"}
+                        disabled={(!(ready && authenticated)) && !availableTabsOffline.includes(tab.id)}
                         className={
                           `
                            w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors 
                           ${activeTab === tab.id ? "bg-primary text-white" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}
-                          ${(!(ready && authenticated) || (!userData.isSeller && tab.id === "addresses")) ? "cursor-not-allowed" : "cursor-pointer"}
-                          ${tab.id === "settings" ? "cursor-pointer" : ""}
+                          ${(!(ready && authenticated) || tab.id !== "settings") ? "cursor-not-allowed" : "cursor-pointer"}
+                          ${availableTabsOffline.includes(tab.id) ? "cursor-pointer" : ""}
                         `
                         }
                       >
@@ -195,7 +199,7 @@ function ProfilePageLoading() {
       <div className="container mx-auto px-4">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">My Profile</h1>
         <div className="flex flex-col md:flex-row gap-8">
-           {/* Skeleton for Sidebar */}
+          {/* Skeleton for Sidebar */}
           <div className="md:w-1/4">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 animate-pulse">
               <div className="flex items-center space-x-3 mb-6">

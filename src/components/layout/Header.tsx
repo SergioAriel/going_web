@@ -3,15 +3,24 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { ShoppingBagIcon, UserIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import {
+  ShoppingBagIcon, UserIcon,
+  // MagnifyingGlassIcon,
+  ArrowRightStartOnRectangleIcon, ArrowLeftEndOnRectangleIcon
+} from "@heroicons/react/24/outline";
 import { useCart } from "@/context/CartContext";
+import { useLogin, useLogout, usePrivy } from "@privy-io/react-auth";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { getTotalItems } = useCart();
   const itemCount = getTotalItems();
-  
+
+  const { ready, authenticated } = usePrivy()
+  const { login } = useLogin()
+  const { logout } = useLogout()
+
   // Effect to detect scroll and change header appearance
   useEffect(() => {
     const handleScroll = () => {
@@ -21,68 +30,91 @@ const Header = () => {
         setScrolled(false);
       }
     };
-    
+
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-  
+
+  const handlerLogin = async () => {
+    try {
+      await login();
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
+  }
+
   return (
-    <header className={`sticky top-0 z-40 transition-all duration-300 ${
-      scrolled 
-        ? "bg-white/90 dark:bg-gray-800/90 backdrop-blur-md shadow-md" 
-        : "bg-white dark:bg-gray-800"
-    }`}>
+    <header className={`sticky top-0 z-40 transition-all duration-300 ${scrolled
+      ? "bg-white/90 dark:bg-gray-800/90 backdrop-blur-md shadow-md"
+      : "bg-white dark:bg-gray-800"
+      }`}>
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo with SVG */}
           <Link href="/" className="flex items-center">
-            <div className="w-auto h-8 relative">
-              <Image 
-                src="/goingLogo.svg" 
-                alt="Going Marketplace" 
-                width={120} 
-                height={40} 
+            <div className="w-auto h-12 relative">
+              <Image
+                src="/goingLogo.svg"
+                alt="Going Marketplace"
+                width={120}
+                height={40}
                 style={{ width: "100%", height: "100%" }}
                 className=" transition-transform duration-300 hover:scale-105"
               />
             </div>
           </Link>
-          
+
           {/* Navigation - Desktop */}
           <nav className="hidden md:flex space-x-8">
-            <Link 
-              href="/products" 
+            <Link
+              href="/products"
               className="text-gray-600 hover:text-primary dark:text-gray-300 dark:hover:text-primary relative group"
             >
               <span>Products</span>
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-primary transition-all duration-300 group-hover:w-full"></span>
             </Link>
-            <Link 
-              href="/categories" 
+            <Link
+              href="/categories"
               className="text-gray-600 hover:text-primary dark:text-gray-300 dark:hover:text-primary relative group"
             >
               <span>Categories</span>
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-primary transition-all duration-300 group-hover:w-full"></span>
             </Link>
-            <Link 
-              href="/offers" 
+            <Link
+              href="/offers"
               className="text-gray-600 hover:text-primary dark:text-gray-300 dark:hover:text-primary relative group"
             >
               <span>Offers</span>
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-primary transition-all duration-300 group-hover:w-full"></span>
             </Link>
-            </nav>
-          
+          </nav>
+
           {/* User actions */}
           <div className="flex items-center space-x-4">
-            <button className="text-gray-600 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors duration-300">
+            {/* <button className="text-gray-600 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors duration-300">
               <MagnifyingGlassIcon className="h-6 w-6" />
-            </button>
-            
+            </button> */}
+            {
+              !(ready && authenticated) ?
+                <button
+                  className="text-gray-600 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors duration-300"
+                  onClick={handlerLogin}
+                >
+                  <ArrowLeftEndOnRectangleIcon className="h-6 w-6" />
+                </button>
+                :
+                <button
+                  className="text-gray-600 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors duration-300"
+                  onClick={() => logout()}
+                >
+                  <ArrowRightStartOnRectangleIcon className="h-6 w-6" />
+                </button>
+            }
+
             <Link href="/profile" className="text-gray-600 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors duration-300">
               <UserIcon className="h-6 w-6" />
             </Link>
-            
+
             <Link href="/cart" className="text-gray-600 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors duration-300 relative">
               <ShoppingBagIcon className="h-6 w-6" />
               {itemCount > 0 && (
@@ -92,7 +124,7 @@ const Header = () => {
               )}
             </Link>
           </div>
-          
+
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center">
             <button
@@ -124,7 +156,7 @@ const Header = () => {
             </button>
           </div>
         </div>
-        
+
         {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-gray-200 dark:border-gray-700">

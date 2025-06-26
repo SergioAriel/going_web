@@ -78,6 +78,7 @@ export const AddressesTab = () => {
         isError: false
       })
     } else {
+      console.error("Failed to update address", resUpdateUser.error);
       handleAlert({
         message: "Failed to update address",
         isError: true
