@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import client from "@/lib/mongodb";
 import { ObjectId } from 'mongodb';
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ _id: string }> }) {
   try {
+     const _id = (await params)._id;
     const { status } = await request.json();
     if (!status) {
       return NextResponse.json({ message: 'Status is required' }, { status: 400 });
@@ -11,7 +12,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     const db = client.db("going");
     const result = await db.collection('shipments').updateOne(
-      { _id: new ObjectId(params.id) },
+      { _id: new ObjectId(_id) },
       { $set: { status: status, updatedAt: new Date() } }
     );
 
