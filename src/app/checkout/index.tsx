@@ -122,18 +122,7 @@ const CheckoutPage = ({ items, clearCart }: { items: CartItem[], clearCart?: () 
     }
 
     try {
-      const orderId = await uploadOrder({
-        date: new Date(),
-        buyer: {
-          walletAddress: wallet.address,
-          _id: user?.id
-        },
-        decryptedAddress: address,
-        status: "processing",
-        // totalPrice,
-        sellers: [...(new Set(items.map((item: CartItem) => item.seller)))],
-        items: items
-      } as Order)
+
 
 
       const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
@@ -179,6 +168,19 @@ const CheckoutPage = ({ items, clearCart }: { items: CartItem[], clearCart?: () 
         transaction,
         connection
       );
+
+      const orderId = await uploadOrder({
+        date: new Date(),
+        buyer: {
+          walletAddress: wallet.address,
+          _id: user?.id
+        },
+        decryptedAddress: address,
+        status: "processing",
+        // totalPrice,
+        sellers: [...(new Set(items.map((item: CartItem) => item.seller)))],
+        items: items
+      } as Order)
 
       setPaymentStage("confirmed");
 
