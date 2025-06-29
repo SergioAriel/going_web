@@ -2,7 +2,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import client from "@/lib/mongodb";
-import { ObjectId } from 'mongodb';
 
 export async function GET(request: NextRequest) {
   try {

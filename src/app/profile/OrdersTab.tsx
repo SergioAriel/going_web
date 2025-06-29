@@ -43,7 +43,7 @@ export const OrdersTab = () => {
     setShowQR(orderId);
   };
 
-  const handleScanSuccess = async (decodedText: any, decodedResult: any) => {
+  const handleScanSuccess = async (decodedText: string) => {
     try {
       const order = await updateOrder({
         _id: decodedText,
@@ -65,7 +65,7 @@ export const OrdersTab = () => {
     }
   };
 
-  const handleScanFailure = (error: any) => {
+  const handleScanFailure = (error: string) => {
     console.warn(`QR error = ${error}`);
   };
 

@@ -20,7 +20,7 @@ import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import { usePrivy } from "@privy-io/react-auth";
 import { useAlert } from "@/context/AlertContext";
 import { deleteOrder, updateOrder, uploadOrder } from "@/lib/ServerActions/orders";
-import { AddressForm, CartItem } from "@/interfaces";
+import { AddressForm, CartItem, Order } from "@/interfaces";
 import { useCurrencies } from "@/context/CurrenciesContext";
 
 const CheckoutPage = ({ items, clearCart }: { items: CartItem[], clearCart?: () => void }) => {
@@ -37,7 +37,7 @@ const CheckoutPage = ({ items, clearCart }: { items: CartItem[], clearCart?: () 
     street: "",
     city: "",
     state: "",
-    zip: "",
+    zipCode: "",
     country: "",
     phone: "",
     email: "",
@@ -133,7 +133,7 @@ const CheckoutPage = ({ items, clearCart }: { items: CartItem[], clearCart?: () 
         // totalPrice,
         sellers: [...(new Set(items.map((item: CartItem) => item.seller)))],
         items: items
-      })
+      } as Order)
 
 
       const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
@@ -397,7 +397,7 @@ const CheckoutPage = ({ items, clearCart }: { items: CartItem[], clearCart?: () 
                             name="zip"
                             type="text"
                             required
-                            value={address.zip}
+                            value={address.zipCode}
                             onChange={handleAddressChange}
                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
                           />
@@ -648,7 +648,7 @@ const CheckoutPage = ({ items, clearCart }: { items: CartItem[], clearCart?: () 
                     <p className="text-gray-900 dark:text-white font-medium">{address.fullName}</p>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">{address.street}</p>
                     <p className="text-gray-600 dark:text-gray-400">
-                      {address.city}, {address.state} {address.zip}
+                      {address.city}, {address.state} {address.zipCode}
                     </p>
                     <p className="text-gray-600 dark:text-gray-400">{address.country}</p>
                     <p className="text-gray-600 dark:text-gray-400 mt-2">{address.phone}</p>

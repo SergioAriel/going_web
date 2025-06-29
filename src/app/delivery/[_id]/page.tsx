@@ -36,7 +36,7 @@ const DeliveryPage = () => {
             <p>Current Location:</p>
             <p>Latitude: {location.lat.toFixed(4)}</p>
             <p>Longitude: {location.lng.toFixed(4)}</p>
-            <p className="mt-4 text-sm text-gray-500">This page is simulating a delivery driver's location updates.</p>
+            <p className="mt-4 text-sm text-gray-500">This page is simulating a delivery driver&#39;s location updates.</p>
             <div className="mt-6">
                 <MapDisplay lat={location.lat} lng={location.lng} />
             </div>
