@@ -1,7 +1,7 @@
 import { getUser } from "@/lib/ServerActions/users";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export const GET = async (_, { params }: { params: { _id: string } }) => {
+export async function GET(_: NextRequest, { params }: { params: Promise<{ _id: string }> }) {
     const _id = (await params)._id;
     if (!_id) {
         return NextResponse.json({ error: "User ID is required" }, { status: 400 });
