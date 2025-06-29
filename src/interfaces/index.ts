@@ -16,21 +16,25 @@ export interface User {
   telegram: string;
   facebook: string;
   isSeller: boolean;
+  isDriver?: boolean; // Added for delivery drivers
+  currentLocation?: { lat: number; lng: number }; // Added for delivery drivers
   wishlist: string[];
   settings: {
     theme: "light" | "dark" | "system";
     currency: string;
-    lenguage: string;
+    language: string;
   }
 }
 export interface Addresses {
   name: string;
-  address: string;
+  street: string;
   city: string;
   state: string;
   country: string;
-  zip: string;
+  zipCode: string;
   phone: string;
+  lat?: number; // Added for geocoding
+  lng?: number; // Added for geocoding
 }
 export interface CreateProduct {
   seller: string;
@@ -76,7 +80,7 @@ export interface Product {
 }
 
 export interface CartItem extends Partial<Product> {
-  _id: ObjectId;
+  _id: ObjectId | string ;
   seller: string;
   name: string;
   price: number;
@@ -100,15 +104,20 @@ export interface Order {
   decryptedAddress?: AddressForm;
   sellers: string[];
   signature: string;
+  driverId?: string;
   // totalPrice: number;
-  items: {
-    _id: string;
-    price: number;
-    quantity: number;
-    name: string;
-    image: string;
-    currency: string;
-  }[];
+  items: CartItem[];
+}
+
+export interface Shipment {
+  _id: ObjectId | string;
+  orderId: string;
+  sellerId: string;
+  driverId: string;
+  status: 'pending_assignment' | 'en_route_to_pickup' | 'in_transit' | 'delivered';
+  items: Order['items'];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface OrderWithEncryptedAddress extends Omit<Order, 'decryptedAddress'> {
@@ -120,10 +129,12 @@ export interface AddressForm {
   street: string;
   city: string;
   state: string;
-  zip: string;
+  zipCode: string;
   country: string;
   phone: string;
   email: string;
+  lat?: number; // Added for geocoding
+  lng?: number; // Added for geocoding
 }
 
 export interface EncryptedData {

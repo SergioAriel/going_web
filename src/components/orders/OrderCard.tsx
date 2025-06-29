@@ -1,12 +1,15 @@
 import { Order } from "@/interfaces";
-import { ArrowRightIcon } from "@heroicons/react/24/outline";
+import { ArrowRightIcon, QrCodeIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 
 interface OrderCardProps {
   order: Order;
+  isBuyer?: boolean;
+  isSeller?: boolean;
+  onShowQR?: (orderId: string) => void;
 }
 
-export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
+export const OrderCard: React.FC<OrderCardProps> = ({ order, isBuyer, onShowQR }) => {
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
       <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 flex flex-col sm:flex-row sm:justify-between sm:items-center">
@@ -27,7 +30,12 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
           </div>
         </div>
         <div className="mt-2 sm:mt-0 flex items-center">
-          <Link href={`/order/${order._id}`} className="text-primary hover:text-primary-dark flex items-center">
+          {isBuyer && onShowQR && (
+            <button onClick={() => onShowQR(order._id.toString())} className="text-primary hover:text-primary-dark mr-4">
+              <QrCodeIcon className="h-6 w-6" />
+            </button>
+          )}
+          <Link href={`/order/${order._id}?conditionUser=${isBuyer ? 'buyer' : 'seller'}`} className="text-primary hover:text-primary-dark flex items-center">
             View Details
             <ArrowRightIcon className="h-4 w-4 ml-1" />
           </Link>

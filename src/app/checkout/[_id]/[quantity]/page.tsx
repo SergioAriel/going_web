@@ -5,7 +5,7 @@ import CheckoutPage from "../..";
 
 export default async function DirectCheckout ({params}: { params: Promise<{_id: string, quantity: string}> }) {
     const {_id, quantity} = await params
-    const product = await getOneProduct(_id)
+    const { _id: idProduct, ...product} = await getOneProduct(_id)
 
     if(!product) throw new Error("Not Found Product")
 
@@ -14,7 +14,7 @@ export default async function DirectCheckout ({params}: { params: Promise<{_id: 
         <Suspense
             fallback={<PageLoading/>}
          >
-            <CheckoutPage items={[{...product, quantity: Number(quantity)}]}/>
+            <CheckoutPage items={[{...product, _id: idProduct.toString(), quantity: Number(quantity)}]}/>
         </Suspense>
     )
 } 

@@ -11,6 +11,8 @@ if (!keyHex) {
 const key = Buffer.from(keyHex, 'hex');
 
 export function encryptObject(obj: AddressForm): EncryptedData {
+
+    console.log(obj)
   const text = JSON.stringify(obj);
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv(algorithm, key, iv);

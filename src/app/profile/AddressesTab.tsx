@@ -10,11 +10,11 @@ export const AddressesTab = () => {
   const { handleAlert } = useAlert()
   const [address, setAddress] = useState<Addresses>({
     name: "",
-    address: "",
+    street: "",
     city: "",
     state: "",
     country: "",
-    zip: "",
+    zipCode: "",
     phone: ""
   });
   const [isEditing, setIsEditing] = useState(false);
@@ -64,11 +64,11 @@ export const AddressesTab = () => {
       });
       setAddress({
         name: "",
-        address: "",
+        street: "",
         city: "",
         state: "",
         country: "",
-        zip: "",
+        zipCode: "",
         phone: ""
       });
       setIsEditing(false);
@@ -122,11 +122,11 @@ export const AddressesTab = () => {
               setIsEditing(true);
               setAddress({
                 name: "",
-                address: "",
+                street: "",
                 city: "",
                 state: "",
                 country: "",
-                zip: "",
+                zipCode: "",
                 phone: ""
               });
             }}
@@ -163,8 +163,8 @@ export const AddressesTab = () => {
                 <input
                   type="text"
                   name="address"
-                  value={address.address}
-                  onChange={(e) => setAddress({ ...address, address: e.target.value })}
+                  value={address.street}
+                  onChange={(e) => setAddress({ ...address, street: e.target.value })}
                   placeholder="address"
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
                 />
@@ -184,8 +184,8 @@ export const AddressesTab = () => {
                 />
                 <input
                   type="text"
-                  value={address.zip}
-                  onChange={(e) => setAddress({ ...address, zip: e.target.value })}
+                  value={address.zipCode}
+                  onChange={(e) => setAddress({ ...address, zipCode: e.target.value })}
                   placeholder="Zip Code"
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
                 />
@@ -210,11 +210,11 @@ export const AddressesTab = () => {
                     setIsEditing(false);
                     setAddress({
                       name: "",
-                      address: "",
+                      street: "",
                       city: "",
                       state: "",
                       country: "",
-                      zip: "",
+                      zipCode: "",
                       phone: ""
                     });
                   }}
@@ -258,9 +258,9 @@ export const AddressesTab = () => {
                       </div>
                     </div>
                     <div className="mt-2 text-gray-600 dark:text-gray-400">
-                      <p>{address.address}</p>
+                      <p>{address.street}</p>
                       <p>{address.city}, {address.state}</p>
-                      <p>{address.zip}</p>
+                      <p>{address.zipCode}</p>
                       <p>{address.country}</p>
                       <p>Tel: {address.phone}</p>
                     </div>

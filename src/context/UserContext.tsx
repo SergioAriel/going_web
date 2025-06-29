@@ -38,7 +38,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     settings: {
       theme: "light",
       currency: "",
-      lenguage: "en",
+      language: "en",
     },
     wishlist: []
   });
@@ -77,7 +77,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             settings: {
               theme: "light",
               currency: "USD",
-              lenguage: "en",
+              language: "en",
             },
             wishlist: []
           }

@@ -128,11 +128,11 @@ const CheckoutPage = ({ items, clearCart }: { items: CartItem[], clearCart?: () 
           walletAddress: wallet.address,
           _id: user?.id
         },
-        encryptedAddress: address,
+        decryptedAddress: address,
         status: "processing",
         // totalPrice,
         sellers: [...(new Set(items.map((item: CartItem) => item.seller)))],
-        items: items.map((item: CartItem) => ({ _id: item._id.toString(), price: item.price, quantity: item.quantity, name: item.name, image: item.mainImage, currency: item.currency }))
+        items: items
       })
 
 

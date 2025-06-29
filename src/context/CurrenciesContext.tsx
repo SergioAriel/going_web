@@ -45,7 +45,7 @@ export const CurrenciesProvider = ({ children }: { children: React.ReactNode }) 
 export const useCurrencies = () => {
 	const context = useContext(CurrenciesContext);
 	if (!context) {
-		throw new Error("useSettings must be used within a SettingsProvider");
+		throw new Error("useCurrencies must be used within a CurrenciesProvider");
 	}
 	return context;
 }

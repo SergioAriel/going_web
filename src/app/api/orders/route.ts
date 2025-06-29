@@ -1,17 +1,31 @@
+import {NextResponse} from "next/server";
+import { getOrders, uploadOrder, updateOrder, deleteOrder, getOrder } from "@/lib/ServerActions/orders";
 
-import { uploadOrder } from '@/lib/ServerActions/orders';
-import { NextRequest, NextResponse } from 'next/server';
-
-export const POST = async (
-    req: NextRequest,
-) => {
-    try {
-        const order = await req.json();
-        const orderId = await uploadOrder(order)
-
-        return NextResponse.json({ orderId: orderId }, { status: 201 });
-    } catch (error) {
-        console.error('Error in /api/orders endpoint:', error);
-        return NextResponse.json({ message: 'An unexpected error occurred.' }, { status: 500 });
+export async function GET(request: Request) {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    if (id) {
+        const order = await getOrder({ _id: id });
+        return NextResponse.json(order);
     }
+    const orders = await getOrders();
+    return NextResponse.json(orders);
+}
+
+export async function POST(request: Request) {
+    const order = await request.json();
+    const newOrder = await uploadOrder(order);
+    return NextResponse.json(newOrder);
+}
+
+export async function PUT(request: Request) {
+    const order = await request.json();
+    const updatedOrder = await updateOrder(order);
+    return NextResponse.json(updatedOrder);
+}
+
+export async function DELETE(request: Request) {
+    const { id } = await request.json();
+    const deletedOrder = await deleteOrder({ _id: id });
+    return NextResponse.json(deletedOrder);
 }

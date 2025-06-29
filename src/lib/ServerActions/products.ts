@@ -14,7 +14,6 @@ export const getOneProduct = async (_id: string) => {
 }
 
 export const getProducts = async (find = {}, sort: { [key: string]: SortDirection } = { metacritic: -1 }) => {
-    console.log("find", find)
     const db = client.db("going");
     const products = await db
         .collection<Product>("products")
