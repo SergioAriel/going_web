@@ -18,7 +18,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ _id: s
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { _id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ _id: string }> }) {
   try {
     const _id = (await params)._id;
     const { status } = await request.json();
