@@ -8,8 +8,8 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ _id: s
     }
     const user = await getUser(_id)
     if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-    
+
     return NextResponse.json(user, { status: 200 });
 }
