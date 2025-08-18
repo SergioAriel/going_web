@@ -39,6 +39,11 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, isBuyer, onShowQR }
             View Details
             <ArrowRightIcon className="h-4 w-4 ml-1" />
           </Link>
+          {isBuyer && order.status === 'payment_rejected' && (
+            <Link href={`/checkout?orderId=${order._id}`} className="ml-4 bg-secondary hover:bg-secondary-dark text-white font-bold py-2 px-4 rounded">
+              Retry Payment
+            </Link>
+          )}
         </div>
       </div>
       <div className="p-4">

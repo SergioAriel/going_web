@@ -68,3 +68,13 @@ export const deleteOrder = async ({ _id }: { _id: string }) => {
         return { status: false, message: "An error occurred while deleting the order." };
     }
 };
+
+export const getOrderById = async (orderId: string): Promise<Order | null> => {
+    const db = client.db("going");
+    const order = await db.collection<OrderWithEncryptedAddress>("orders").findOne({ _id: new ObjectId(orderId) });
+    if (order) {
+        const decryptedAddress = decryptObject(order.encryptedAddress);
+        return { ...order, _id: order._id.toString(), decryptedAddress };
+    }
+    return null;
+};

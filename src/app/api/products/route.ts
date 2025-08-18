@@ -15,16 +15,18 @@ cloudinary.config({
 
 
 export async function GET(request: Request) {
-    const requestHeaders = await headers();
-    const idToken = requestHeaders.get('authorization')
+    // const requestHeaders = await headers();
+    // const authorizationHeader = requestHeaders.get('authorization');
 
-    if (!idToken) {
-        return NextResponse.json({ message: 'Unauthorized - Malformed Authorization header' }, { status: 401 });
-    }
+    // if (!authorizationHeader || !authorizationHeader.startsWith('Bearer ')) {
+    //     return NextResponse.json({ message: 'Unauthorized - Malformed Authorization header' }, { status: 401 });
+    // }
 
-    const identityToken = await verifyIdentityToken(idToken);
+    // const idToken = authorizationHeader.split(' ')[1];
 
-    if (!identityToken) return NextResponse.json({ error: "Failed to upload images" }, { status: 500 });
+    // const identityToken = await verifyIdentityToken(idToken);
+
+    // if (!identityToken) return NextResponse.json({ error: "Failed to upload images" }, { status: 500 });
 
     try {
 

@@ -5,7 +5,8 @@ import { NextResponse } from "next/server";
 export const GET = async (_: Request, { params }: { params: Promise<{ _id: string }> }) => {
     const _id = (await params)._id;
     try {
-        const product = getOneProduct(_id);
+        const product = await getOneProduct(_id);
+        console.log("product", product)
         return NextResponse.json({ product: product, seller: {} }, { status: 200 });
     } catch (error) {
         console.error("Error fetching movies:", error);

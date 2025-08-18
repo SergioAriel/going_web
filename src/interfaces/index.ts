@@ -96,7 +96,7 @@ export interface CartItem extends Partial<Product> {
 export interface Order {
   _id: ObjectId | string;
   date: Date;
-  status: string;
+  status: 'payment_pending' | 'payment_confirmed' | 'ready_to_ship' | 'shipped' | 'delivered' | 'cancelled';
   buyer: {
     walletAddress: string;
     _id?: string;
