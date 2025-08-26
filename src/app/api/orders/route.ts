@@ -1,18 +1,10 @@
 // app/api/orders/route.ts
 import { NextResponse, type NextRequest } from "next/server";
-import { getOrders, uploadOrder, updateOrder, deleteOrder, getOrder } from "@/lib/ServerActions/orders";
+import { getOrders, uploadOrder, updateOrder, deleteOrder } from "@/lib/ServerActions/orders";
 import { headers } from "next/headers";
 import { verifyIdentityToken } from "@/utils/tokenVerification";
 
-export async function GET(request: NextRequest) {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-
-    if (id) {
-        const order = await getOrder({ _id: id });
-        return NextResponse.json(order);
-    }
-
+export async function GET() {
     const orders = await getOrders();
     return NextResponse.json(orders);
 }

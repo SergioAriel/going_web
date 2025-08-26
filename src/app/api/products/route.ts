@@ -110,7 +110,8 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
         tags: data.get("tags") as string,
         isService: data.get("isService") === "true",
         addressWallet: data.get("addressWallet") as string,
-        mainImage: Array.isArray(imageUrls) ? imageUrls[0] : ''
+        mainImage: Array.isArray(imageUrls) ? imageUrls[0] : '',
+        status: data.get("status") as string
     };
 
     if (!file) {

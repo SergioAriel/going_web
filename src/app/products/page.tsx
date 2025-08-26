@@ -60,7 +60,8 @@ const ProductsRendering = (
 
         const find = {
           ...(selectedCategory !== "all" && { category: selectedCategory }),
-          ...(searchQuery && { name: { $regex: searchQuery, $options: 'i' } })
+          ...(searchQuery && { name: { $regex: searchQuery, $options: 'i' } }),
+          status: "published"
         }
 
         const result = (await getProducts(

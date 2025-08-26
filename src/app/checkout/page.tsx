@@ -11,15 +11,17 @@ import {
   WalletIcon,
   ShieldCheckIcon
 } from "@heroicons/react/24/outline";
-import { Connection, Transaction, SystemProgram, 
+import {
+  Connection, Transaction, SystemProgram,
   // LAMPORTS_PER_SOL,
-   PublicKey, clusterApiUrl } from "@solana/web3.js";
+  PublicKey, clusterApiUrl
+} from "@solana/web3.js";
 import { useSendTransaction, useSolanaWallets } from "@privy-io/react-auth/solana";
 import { usePrivy } from "@privy-io/react-auth";
 import { useAlert } from "@/context/AlertContext";
-import { getOrderById, updateOrder } from "@/lib/ServerActions/orders";
+import { getOrder, updateOrder } from "@/lib/ServerActions/orders";
 import { AddressForm, CartItem } from "@/interfaces";
-import { getOneProduct } from "@/lib/ServerActions/products";
+import { getProducts } from "@/lib/ServerActions/products";
 
 const Checkout = () => {
   const router = useRouter();
@@ -61,14 +63,23 @@ const Checkout = () => {
     const loadItems = async () => {
       setLoading(true);
       if (orderId) {
-        const order = await getOrderById(orderId);
+        const order = await getOrder(orderId);
         if (order) {
-          setCheckoutItems(order.items);
+          const productIds = order.items.map((item) => item._id);
+          const products = await getProducts({ _id: { $in: productIds }, status: "published" });
+          const updatedItems = order.items.map((item) => {
+            const product = products.find((p) => p._id === item._id);
+            if (product && product.status === "published") {
+              return { ...product, quantity: item.quantity };
+            }
+            return { ...item, name: `${item.name} (Not Available)`, price: 0, quantity: 0 };
+          });
+          setCheckoutItems(updatedItems);
         }
       } else if (productId && quantity) {
-        const product = await getOneProduct(productId);
-        if (product) {
-          setCheckoutItems([{ ...product, quantity: Number(quantity) }]);
+        const products = await getProducts({ _id: productId });
+        if (products.length > 0) {
+          setCheckoutItems([{ ...products[0], quantity: Number(quantity) }]);
         }
       } else {
         setCheckoutItems(cartItems);
@@ -167,7 +178,7 @@ const Checkout = () => {
     }
 
     try {
-      const orderId = await (await fetch("/api/orders", {
+      const orderId = await (await fetch("/api/order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -199,9 +210,9 @@ const Checkout = () => {
       console.log(checkoutItems)
       const transaction = new Transaction();
       const transferInstructions = await Promise.all(
-        Object.entries(objectPayments).map(async ([address, { 
+        Object.entries(objectPayments).map(async ([address, {
           // totalAmount,
-           currency }]) => {
+          currency }]) => {
           console.log(currency)
           return SystemProgram.transfer({
             fromPubkey: new PublicKey(wallet.address),
@@ -224,7 +235,7 @@ const Checkout = () => {
       });
 
       setPaymentStage("confirmed");
-      
+
       if (transactionReceipt) {
         completeCheckout(transactionReceipt.signature, orderId);
         return;
@@ -653,7 +664,7 @@ const Checkout = () => {
                         <span className="text-lg font-semibold text-primary">
                           {/* ${totalPrice.toFixed(2)} */}
                           34135
-                          </span>
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -698,9 +709,9 @@ const Checkout = () => {
 };
 
 export default function CheckoutWrapper() {
-    return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <Checkout />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <Checkout />
+    </Suspense>
+  )
 }

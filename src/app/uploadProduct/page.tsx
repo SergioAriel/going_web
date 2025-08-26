@@ -32,6 +32,7 @@ const UploadProduct = () => {
     tags: [],
     isService: false,
     addressWallet: "",
+    status: "published",
   });
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const { listCryptoCurrencies } = useCurrencies()
@@ -262,6 +263,23 @@ const UploadProduct = () => {
                       <option value="new">New</option>
                       <option value="used">Used</option>
                       <option value="refurbished">Refurbished</option>
+                    </select>
+                  </div>
+
+                  {/* Status */}
+                  <div>
+                    <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Status
+                    </label>
+                    <select
+                      id="status"
+                      name="status"
+                      value={infoProduct.status}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                    >
+                      <option value="published">Published</option>
+                      <option value="unpublished">Unpublished</option>
                     </select>
                   </div>
 

@@ -102,10 +102,10 @@ export const SellingTab = () => {
             <div key={product._id as string} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">{product.name}</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">${Number(product.price)}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{product.currency} {Number(product.price)}</p>
               </div>
               <span
-                className={`px-3 py-1 rounded-full text-xs font-medium ${product.status === "Active"
+                className={`px-3 py-1 rounded-full text-xs font-medium ${product.status === "published"
                   ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
                   : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
                   }`}

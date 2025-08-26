@@ -61,7 +61,7 @@ export interface Product {
   category: string;
   price: number;
   currency: string;
-  status: string;
+  status: "published" | "unpublished";
   images: Array<string | File>;
   mainImage: string;
   stock: number;

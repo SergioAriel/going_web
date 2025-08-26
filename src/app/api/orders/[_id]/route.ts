@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { ObjectId } from 'mongodb';
 import client from '@/lib/mongodb';
+import { getOrder } from '@/lib/ServerActions/orders';
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ _id: string }> }) {
   try {
     const _id = (await params)._id;
-    const db = client.db('going');
-    const order = await db.collection('orders').findOne({ _id: new ObjectId(_id) });
+
+    const order = await getOrder(_id)
     if (!order) {
       return NextResponse.json({ message: 'Order not found' }, { status: 404 });
     }

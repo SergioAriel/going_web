@@ -42,15 +42,15 @@ export const getOrders = async (find = {}) => {
     return orders;
 }
 
-export const getOrder = async ({ _id }: { _id: string }): Promise<Order | null> => {
+export const getOrder = async (orderId: string): Promise<Order | null> => {
     const db = client.db("going");
-    const order = await db.collection<OrderWithEncryptedAddress>("orders").findOne({ _id: new ObjectId(_id) });
+    const order = await db.collection<OrderWithEncryptedAddress>("orders").findOne({ _id: new ObjectId(orderId) });
     if (order) {
-        const decryptObjectData = decryptObject(order.encryptedAddress)
-        return { ...order, _id: order._id.toString(), decryptedAddress: decryptObjectData };
+        const decryptedAddress = decryptObject(order.encryptedAddress);
+        return { ...order, _id: order._id.toString(), decryptedAddress };
     }
     return null;
-}
+};
 
 export const deleteOrder = async ({ _id }: { _id: string }) => {
     try {
@@ -69,12 +69,4 @@ export const deleteOrder = async ({ _id }: { _id: string }) => {
     }
 };
 
-export const getOrderById = async (orderId: string): Promise<Order | null> => {
-    const db = client.db("going");
-    const order = await db.collection<OrderWithEncryptedAddress>("orders").findOne({ _id: new ObjectId(orderId) });
-    if (order) {
-        const decryptedAddress = decryptObject(order.encryptedAddress);
-        return { ...order, _id: order._id.toString(), decryptedAddress };
-    }
-    return null;
-};
+
