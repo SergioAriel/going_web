@@ -1,32 +1,61 @@
-'use server'
+'use server';
 
-import { User } from "@/interfaces";
+import { User, Address } from "@/interfaces";
 import client from "../mongodb";
+import { FindOneAndUpdateOptions, ObjectId } from "mongodb";
 
-export const getUser = async (_id: string): Promise<User> => {
+// Placeholder for a real geocoding service
+const geocodeAddress = async (address: Address): Promise<{ lat: number; lon: number } | null> => {
+    console.log(`GEOCODING (Placeholder): ${address.street}, ${address.city}`);
+    return {
+        lat: 40.7128, // Dummy Latitude (New York City)
+        lon: -74.0060, // Dummy Longitude (New York City)
+    };
+};
+
+export const getUser = async (_id: string): Promise<User | null> => {
+    // In this server action, the _id is the privy DID, which is a string, not an ObjectId
     const db = client.db("going");
-    const user = (await db
+    const user = await db
         .collection<User>("users")
-        .findOne<User>({ '_id': _id }));
-        if (!user) {
-            throw new Error("User not found");
-        }
-        console.log(user)
-    return { ...user, _id: user?._id.toString()}
+        .findOne({ _id: _id });
+    if (!user) {
+        return null;
+    }
+    return user as User;
 }
 
-export const updateUser = async (user: Partial<User> | { _id: string }) => {
-    const db = client.db("going");
+export const updateUser = async (_id: string, user: Partial<User>) => {
+const db = client.db("going");
     try {
         const { _id, ...userData } = user;
-        const updatedUser = await db.collection<User>("users").updateOne(
-            { _id: user._id },
-            { $set: { ...userData } }
+
+        // Geocode addresses if they are present and lack coordinates
+        if (userData.addresses && Array.isArray(userData.addresses)) {
+            userData.addresses = await Promise.all(userData.addresses.map(async (address) => {
+                if (address && (!address.lat || !address.lon)) {
+                    const coords = await geocodeAddress(address);
+                    if (coords) {
+                        return { ...address, ...coords };
+                    }
+                }
+                return address;
+            }));
+        }
+
+        const options: FindOneAndUpdateOptions = { returnDocument: 'after' };
+
+        const result = await db.collection<User>("users").findOneAndUpdate(
+            { _id: _id }, // User _id is the privy DID string
+            { $set: userData },
+            options
         );
-        console.log("User updated in database:", updatedUser);
-        return { status: true };
+
+        return { status: true, user: result };
     } catch (error) {
-        return { status: false, error: error };
+        console.error("Error updating user:", error);
+        const message = error instanceof Error ? error.message : "An unknown error occurred";
+        return { status: false, message };
     }
 }
 
@@ -38,16 +67,23 @@ export const uploadUser = async (user: Omit<User, '_id'> & { _id: string }) => {
 
         const userToInsert = {
             ...userData,
-            _id: _id,
+            _id: new ObjectId(_id), // Privy DID is used as MongoDB _id
         };
 
-        const newUser = await db.collection<User>("users").insertOne(
+        const result = await db.collection("users").insertOne(
             userToInsert
         );
+        
+        const newUser = {
+            ...userToInsert,
+            _id: result.insertedId
+        }
+
         console.log("User created in database:", newUser);
         return { status: true, user: newUser };
     } catch (error) {
         console.error("Error uploading user:", error);
-        return { status: false, error: error };
+        const message = error instanceof Error ? error.message : "An unknown error occurred";
+        return { status: false, message };
     }
 }

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { Suspense, useEffect, useState } from "react";
 import Image from "next/image";
@@ -9,10 +9,11 @@ import {
   TruckIcon,
   ArrowRightStartOnRectangleIcon,
   ArrowLeftEndOnRectangleIcon,
-  CogIcon
+  CogIcon,
+  CubeIcon,
+  HomeIcon
 } from "@heroicons/react/24/outline";
 import { useLogin, useLogout, usePrivy } from "@privy-io/react-auth";
-import { useAlert } from "@/context/AlertContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AccountTab } from "./AccountTab";
 import { OrdersTab } from "./OrdersTab";
@@ -22,18 +23,20 @@ import { AddressesTab } from "./AddressesTab";
 import { NotificationsTab } from "./NotificationsTab";
 import { SettingsTab } from "./SettingsTab";
 import { SellingTab } from "./SellingTab";
+import { ShipmentsTab } from "./ShipmentsTab";
 import { useUser } from "@/context/UserContext";
 
-// Available profile tabs
-const tabs = [
+const baseTabs = [
   { id: "account", name: "My Account", icon: UserIcon },
-  { id: "orders", name: "Orders", icon: ShoppingBagIcon },
-  // { id: "wishlist", name: "Wishlist", icon: HeartIcon },
-  { id: "payment", name: "Associated Wallets", icon: CreditCardIcon },
-  { id: "addresses", name: "Addresses", icon: TruckIcon },
-  { id: "selling", name: "My Products", icon: ShoppingBagIcon },
-  // { id: "notifications", name: "Notifications", icon: BellIcon },
+  { id: "orders", name: "My Orders", icon: ShoppingBagIcon },
+  { id: "addresses", name: "My Addresses", icon: HomeIcon },
+  { id: "payment", name: "Wallets", icon: CreditCardIcon },
+  { id: "selling", name: "Selling", icon: CubeIcon },
   { id: "settings", name: "Settings", icon: CogIcon },
+];
+
+const sellerTabs = [
+  { id: "shipments", name: "Shipments", icon: TruckIcon },
 ];
 
 const ProfileContent = () => {
@@ -42,13 +45,14 @@ const ProfileContent = () => {
 
   const { login } = useLogin()
   const { logout } = useLogout()
-  const { handleAlert } = useAlert()
-  // Content to display based on the selected tab
+  
   const router = useRouter()
   const searchParams = useSearchParams()
   const tabParams = searchParams.get('tab')
 
-  const [activeTab, setActiveTab] = useState(tabParams || "settings");
+  const [activeTab, setActiveTab] = useState(tabParams || "account");
+
+  const displayedTabs = userData?.isSeller ? [...baseTabs, ...sellerTabs] : baseTabs;
 
   useEffect(() => {
     if (!ready || !authenticated) {
@@ -58,16 +62,16 @@ const ProfileContent = () => {
       setActiveTab(tabParams || "account")
     }
     if (tabParams) {
-      const tab = tabs.find((tab) => tab.id === tabParams);
+      const tab = displayedTabs.find((tab) => tab.id === tabParams);
       if (tab) {
         setActiveTab(tab.id);
         router.replace(`/profile`);
       }
     }
-  }, [tabParams, ready, authenticated]);
+  }, [tabParams, ready, authenticated, displayedTabs, router]);
 
   const renderTabContent = () => {
-    const tabs = {
+    const tabsContent = {
       account: <AccountTab />,
       orders: <OrdersTab />,
       wishlist: <WishlistTab />,
@@ -75,15 +79,15 @@ const ProfileContent = () => {
       addresses: <AddressesTab />,
       notifications: <NotificationsTab />,
       selling: <SellingTab />,
+      shipments: <ShipmentsTab />,
       settings: <SettingsTab />,
     };
-    // Check if the active tab exists in the tabs object
-    if (!tabs[activeTab as keyof typeof tabs]) {
-      // If not, return the default tab content (e.g., AccountTab)
+    
+    if (!tabsContent[activeTab as keyof typeof tabsContent]) {
       return <AccountTab />;
     }
 
-    return tabs[activeTab as keyof typeof tabs]
+    return tabsContent[activeTab as keyof typeof tabsContent]
   };
 
 
@@ -95,12 +99,7 @@ const ProfileContent = () => {
     }
   }
 
-
-  const availableTabsOffline = ["settings", "orders"]
-
-
   return (
-
     <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-10">
       <div className="container mx-auto px-4">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">My Profile</h1>
@@ -113,53 +112,39 @@ const ProfileContent = () => {
                 <div className="h-16 w-16 rounded-full">
                   <Image
                     src={userData.avatar || "/logo.png"}
-                    alt={userData.name}
+                    alt={userData.fullName || "User"}
                     width={100}
                     height={100}
-                    className="object-cover"
+                    className="object-cover rounded-full"
                   />
                 </div>
-                <div className="w-full">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{userData.name}</h2>
+                <div className="w-full mt-2 md:mt-0 md:ml-3">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white truncate">{userData.fullName || "New User"}</h2>
                   <p className="w-full text-sm text-gray-600 dark:text-gray-400 overflow-hidden text-ellipsis">{userData.email}</p>
                 </div>
               </div>
 
               <div className="space-y-1">
                 {
-                  tabs.map((tab) => {
-
-                    return (
+                  displayedTabs.map((tab) => (
                       <button
                         key={tab.id}
-                        onClick={() => {
-                          if (!userData.isSeller && tab.id === "addresses") {
-                            handleAlert({
-                              message: "Only Available to Sellers",
-                              isError: true
-                            })
-                          }
-                          setActiveTab(tab.id)
-                        }}
-                        disabled={(!(ready && authenticated)) && !availableTabsOffline.includes(tab.id)}
+                        onClick={() => setActiveTab(tab.id)}
+                        disabled={!authenticated && tab.id !== 'settings'}
                         className={
-                          `
-                           w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors 
+                          `w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed 
                           ${activeTab === tab.id ? "bg-primary text-white" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}
-                          ${(!(ready && authenticated) || tab.id !== "settings") ? "cursor-not-allowed" : "cursor-pointer"}
-                          ${availableTabsOffline.includes(tab.id) ? "cursor-pointer" : ""}
                         `
                         }
                       >
                         <tab.icon className="h-5 w-5" />
-                        <span title="afasf">{tab.name}</span>
+                        <span>{tab.name}</span>
                       </button>
-                    )
-                  })
+                  ))
                 }
                 {/* Logout Button */}
                 {
-                  !(ready && authenticated) ?
+                  !authenticated ?
                     <button
                       className="cursor-pointer w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                       onClick={handlerLogin}

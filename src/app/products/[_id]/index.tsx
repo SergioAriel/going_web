@@ -86,23 +86,23 @@ const ProductDetail = ({ product, seller }: { product: Product, seller?: User | 
       isError: true,
       message: "Please log in to add products to your wishlist."
     });
-    if (!userData.wishlist.includes(product._id.toString())) {
-      const updateWishList = await updateUser({
-        _id: userData._id,
-        wishlist: [...userData.wishlist, product._id.toString()],
-      })
+    if (!userData.wishlist.includes(product._id?.toString() as string)) {
+      const updateWishList = await updateUser(userData._id.toString(),
+        {
+          
+          wishlist: [...userData.wishlist, product._id?.toString() as string],
+        })
       if (updateWishList.status) {
         console.log("wishlist updates")
         setUserData((prevData) => ({
           ...prevData,
-          wishlist: [...prevData.wishlist, product._id.toString()],
+          wishlist: [...prevData.wishlist, product._id?.toString() as string],
         }));
       } else {
-        console.error("Error updating wishlist:", updateWishList.error);
+        console.error("Error updating wishlist:", updateWishList.message);
       }
     } else {
-      const updateWishList = await updateUser({
-        _id: userData._id,
+      const updateWishList = await updateUser(userData._id.toString(), {
         wishlist: removeFromWishlist(product),
       })
       if (updateWishList.status) {
@@ -115,7 +115,7 @@ const ProductDetail = ({ product, seller }: { product: Product, seller?: User | 
   };
 
   const removeFromWishlist = (product: Product) => {
-    return userData.wishlist.filter(item => item !== product._id.toString());
+    return userData.wishlist.filter(item => item !== product._id?.toString());
   };
 
   return (
@@ -189,7 +189,7 @@ const ProductDetail = ({ product, seller }: { product: Product, seller?: User | 
               onClick={toggleWishlist}
               className="absolute top-3 right-3 p-2 bg-white/80 dark:bg-gray-800/80 rounded-full shadow hover:bg-white dark:hover:bg-gray-700 z-10"
             >
-              {userData.wishlist.includes(product._id.toString()) ? (
+              {userData.wishlist.includes(product._id?.toString() as string) ? (
                 <HeartSolidIcon className="h-4 w-4 text-[#D300E5]" />
               ) : (
                 <HeartIcon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
@@ -316,7 +316,7 @@ const ProductDetail = ({ product, seller }: { product: Product, seller?: User | 
                 <CreditCardIcon className="h-6 w-6 text-primary" />
               </div>
               <div className="ml-4">
-                <p className="text-gray-900 dark:text-white font-medium">{seller.name}</p>
+                <p className="text-gray-900 dark:text-white font-medium">{seller.fullName}</p>
                 <span>{seller.bio}</span>
               </div>
             </div>
@@ -329,7 +329,7 @@ const ProductDetail = ({ product, seller }: { product: Product, seller?: User | 
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">Related Products</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {relatedProducts.map((product) => (
-                <ProductCard key={product._id.toString()} product={{ ...product, _id: product._id.toString() }} />
+                <ProductCard key={product._id.toString()} product={{ ...product, _id: product._id?.toString() }} />
               ))}
             </div>
           </div>

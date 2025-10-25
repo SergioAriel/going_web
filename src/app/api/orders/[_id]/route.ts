@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-import { ObjectId } from 'mongodb';
-import client from '@/lib/mongodb';
-import { getOrder } from '@/lib/ServerActions/orders';
+import { getOrder, updateOrder } from '@/lib/ServerActions/orders';
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ _id: string }> }) {
   try {
@@ -22,19 +19,17 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ _id: s
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ _id: string }> }) {
   try {
     const _id = (await params)._id;
-    const { status } = await request.json();
-    if (!status) {
+    const orderData = await request.json();
+
+    if (!orderData.status) {
       return NextResponse.json({ message: 'Status is required' }, { status: 400 });
     }
 
-    const db = client.db('going');
-    const result = await db.collection('orders').updateOne(
-      { _id: new ObjectId(_id) },
-      { $set: { status: status } }
-    );
+    const result = await updateOrder(_id, orderData);
 
-    if (result.modifiedCount === 0) {
-      return NextResponse.json({ message: 'Order not found or status not changed' }, { status: 404 });
+    if (!result?.status) {
+        // The server action returned an error
+        return NextResponse.json({ message: result?.message || 'Failed to update order' }, { status: 400 });
     }
 
     return NextResponse.json({ message: 'Order updated successfully' });

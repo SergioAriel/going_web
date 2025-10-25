@@ -16,13 +16,22 @@ const CartPage = () => {
   const [totalPrice, setTotalPrice] = useState<number>(0)
 
   useEffect(() => {
-    const total = items.reduce((total, product) => {
-      const priceProductToDollar = listCryptoCurrencies.find(currency => currency.symbol === product.currency)
-      const convertedPrice = ((priceProductToDollar?.price || 0) * (product?.price || 1)) / (userCurrency.price || 1)
-      return total + (convertedPrice * product.quantity)
+    const total = items.reduce((total, item) => {
+      // Determine the price to use (offer or regular)
+      const priceToUse = item.isOffer && item.offerPercentage
+        ? item.price * (1 - item.offerPercentage / 100)
+        : item.price;
+
+      // Find the currency rate for the product's currency
+      const productCurrencyRate = listCryptoCurrencies.find(currency => currency.symbol === item.currency);
+      
+      // Convert the price to a common currency (like USD) and then to the user's selected currency
+      const convertedPrice = ((productCurrencyRate?.price || 0) * (priceToUse || 0)) / (userCurrency.price || 1);
+      
+      return total + (convertedPrice * item.quantity);
     }, 0);
     setTotalPrice(total)
-  }, [])
+  }, [items, userCurrency, listCryptoCurrencies])
 
   // Check if cart is empty
   if (items.length === 0) {
@@ -64,8 +73,13 @@ const CartPage = () => {
 
               <div className="divide-y divide-gray-200 dark:divide-gray-700">
                 {items.map((item) => {
-                  const priceProductToDollar = listCryptoCurrencies.find(currency => currency.symbol === item.currency)
-                  const convertedPrice = ((priceProductToDollar?.price || 0) * (item?.price || 1)) / (userCurrency.price || 1)
+                  const priceToUse = item.isOffer && item.offerPercentage
+                    ? item.price * (1 - item.offerPercentage / 100)
+                    : item.price;
+
+                  const productCurrencyRate = listCryptoCurrencies.find(currency => currency.symbol === item.currency);
+                  const convertedPrice = ((productCurrencyRate?.price || 0) * (priceToUse || 0)) / (userCurrency.price || 1);
+                  const originalConvertedPrice = ((productCurrencyRate?.price || 0) * (item.price || 0)) / (userCurrency.price || 1);
 
                   return (
                     <div key={item._id.toString()} className="p-4 md:grid md:grid-cols-6 md:items-center">
@@ -85,6 +99,11 @@ const CartPage = () => {
                               {item.name}
                             </Link>
                           </h3>
+                          {item.isOffer && (
+                            <span className="text-xs bg-red-100 text-red-800 font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-red-900 dark:text-red-300">
+                              {item.offerPercentage}% OFF
+                            </span>
+                          )}
                           <button
                             type="button"
                             onClick={() => removeFromCart(item._id.toString())}
@@ -98,11 +117,13 @@ const CartPage = () => {
 
                       {/* Price */}
                       <div className="flex flex-col md:text-center mb-4 md:mb-0">
+                        {item.isOffer && (
+                          <span className="text-sm text-gray-500 dark:text-gray-400 line-through">
+                            {userCurrency?.currency || "$"} {originalConvertedPrice.toFixed(2)}
+                          </span>
+                        )}
                         <span className="text-sm font-medium text-gray-900 dark:text-white">
-                          {item?.currency} {(item.price || 0).toFixed(2)}
-                        </span>
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">
-                          {userCurrency?.currency || "$"} {(convertedPrice || 0).toFixed(2)}
+                          {userCurrency?.currency || "$"} {convertedPrice.toFixed(2)}
                         </span>
                       </div>
 
@@ -131,9 +152,6 @@ const CartPage = () => {
 
                       {/* Total */}
                       <div className="flex flex-col md:text-center mb-4 md:mb-0">
-                        <span className="text-base font-medium text-gray-900 dark:text-white">
-                          {item?.currency} {(item.price * item.quantity).toFixed(2)}
-                        </span>
                         <span className="text-base font-medium text-gray-900 dark:text-white">
                           {userCurrency?.currency} {(convertedPrice * item.quantity).toFixed(2)}
                         </span>

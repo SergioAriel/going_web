@@ -16,23 +16,26 @@ import {
   // LAMPORTS_PER_SOL,
   PublicKey, clusterApiUrl
 } from "@solana/web3.js";
-import { useSendTransaction, useSolanaWallets } from "@privy-io/react-auth/solana";
-import { usePrivy } from "@privy-io/react-auth";
+import { useSolanaWallets } from "@privy-io/react-auth/solana";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { useAlert } from "@/context/AlertContext";
-import { getOrder, updateOrder } from "@/lib/ServerActions/orders";
-import { AddressForm, CartItem } from "@/interfaces";
-import { getProducts } from "@/lib/ServerActions/products";
+import { createPendingOrder, getOrder } from "@/lib/ServerActions/orders";
+import { Address, CartItem, NewOrderPayload } from "@/interfaces";
+import { getOneProduct, getProducts } from "@/lib/ServerActions/products";
+import { CheckoutComplete } from "@/lib/ServerActions/checkout";
+import { useCurrencies } from "@/context/CurrenciesContext";
 
 const Checkout = () => {
   const router = useRouter();
   const { user } = usePrivy();
   const { items: cartItems, clearCart } = useCart();
   const { wallets } = useSolanaWallets();
-  const { sendTransaction } = useSendTransaction();
+  const { } = useWallets();
+  // const { sendTransaction } = useSendTransaction();
   const [step, setStep] = useState(1);
   const [selectedPayment, setSelectedPayment] = useState("");
-  const [address, setAddress] = useState<AddressForm>({
-    fullName: "",
+  const [address, setAddress] = useState<Address>({
+    name: "",
     street: "",
     city: "",
     state: "",
@@ -41,13 +44,36 @@ const Checkout = () => {
     phone: "",
     email: "",
   });
-
+  const { userCurrency, listCryptoCurrencies } = useCurrencies()
+  const [totalPrice, setTotalPrice] = useState(0);
   const [loading, setLoading] = useState(true);
   const { handleAlert } = useAlert()
 
   const [orderCompleted, setOrderCompleted] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
   const [checkoutItems, setCheckoutItems] = useState<CartItem[]>([]);
+
+  useEffect(() => {
+    if (!checkoutItems || !userCurrency || !listCryptoCurrencies) return;
+
+    const total = checkoutItems.reduce((acc, item) => {
+      const priceToUse = item.isOffer && item.offerPercentage
+        ? item.price * (1 - item.offerPercentage / 100)
+        : item.price;
+
+      const productCurrencyRate = listCryptoCurrencies.find(c => c.symbol === item.currency);
+      const userCurrencyRate = userCurrency.price || 1;
+
+      if (!productCurrencyRate) return acc; // Skip if currency not found
+
+      const priceInUserCurrency = (priceToUse * productCurrencyRate.price) / userCurrencyRate;
+      return acc + (priceInUserCurrency * item.quantity);
+    }, 0);
+
+    setTotalPrice(total);
+  }, [checkoutItems, userCurrency, listCryptoCurrencies]);
+
+
 
   // State to track progress within each payment method
   const [paymentStage, setPaymentStage] = useState("initial"); // initial, processing, confirmed
@@ -66,10 +92,10 @@ const Checkout = () => {
         const order = await getOrder(orderId);
         if (order) {
           const productIds = order.items.map((item) => item._id);
-          const products = await getProducts({ _id: { $in: productIds }, status: "published" });
+          const products = await getProducts({ _id: { $in: productIds }, publishStatus: "published" });
           const updatedItems = order.items.map((item) => {
             const product = products.find((p) => p._id === item._id);
-            if (product && product.status === "published") {
+            if (product && product.publishStatus === "published") {
               return { ...product, quantity: item.quantity };
             }
             return { ...item, name: `${item.name} (Not Available)`, price: 0, quantity: 0 };
@@ -77,9 +103,9 @@ const Checkout = () => {
           setCheckoutItems(updatedItems);
         }
       } else if (productId && quantity) {
-        const products = await getProducts({ _id: productId });
-        if (products.length > 0) {
-          setCheckoutItems([{ ...products[0], quantity: Number(quantity) }]);
+        const product = await getOneProduct(productId);
+        if (product) {
+          setCheckoutItems([{ ...product, quantity: Number(quantity) }]);
         }
       } else {
         setCheckoutItems(cartItems);
@@ -131,10 +157,7 @@ const Checkout = () => {
     setLoading(true);
     setPaymentStage("confirmed")
     try {
-      await updateOrder({
-        _id: orderId,
-        signature
-      })
+      await CheckoutComplete({ orderId, signature, items: checkoutItems, buyer: { walletAddress: selectedPayment, _id: user.id, address } });
       setOrderNumber(orderId);
       clearCart();
       setOrderCompleted(true);
@@ -150,110 +173,86 @@ const Checkout = () => {
   const handleSubmitPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
-      handleAlert({
-        message: "You need to be logged in to complete the purchase",
-        isError: true
-      })
-      return
-    }
-
-    setLoading(true)
-    if (!selectedPayment) {
-      handleAlert({
-        message: "Wallet not selected",
-        isError: true
-      })
-      setPaymentError(true)
-      return
-    }
-
-    const wallet = wallets.find((wallet) => wallet.address === selectedPayment)
-    if (!wallet) {
-      handleAlert({
-        message: "Wallet not found",
-        isError: true
-      })
-      setPaymentError(true)
+      handleAlert({ message: "You need to be logged in to complete the purchase", isError: true });
       return;
     }
+    if (!selectedPayment) {
+      handleAlert({ message: "Wallet not selected", isError: true });
+      return;
+    }
+
+    const wallet = wallets.find((wallet) => wallet.address === selectedPayment);
+    if (!wallet) {
+      handleAlert({ message: "Wallet not found", isError: true });
+      return;
+    }
+
+    setLoading(true);
+    setPaymentStage("processing");
 
     try {
-      const orderId = await (await fetch("/api/order", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      // 1. Construir el payload que se enviará a la Server Action
+      const orderPayload: NewOrderPayload = {
+        buyer: {
+          walletAddress: wallet.address,
+          _id: user.id,
+          address
         },
-        body: JSON.stringify({
-          date: new Date(),
-          buyerId: user?.id,
-          encryptedAddress: address,
-          status: "processing",
-          // totalPrice,
-          sellers: [...(new Set(checkoutItems.map((item: CartItem) => item.seller)))],
-          items: checkoutItems.map((item: CartItem) => ({ _id: item._id, price: item.price, quantity: item.quantity, name: item.name, image: item.mainImage, currency: item.currency }))
-        })
-      })).json();
+        status: "payment_pending",
+        date: new Date(),
+        sellers: [...new Set(checkoutItems.map((item: CartItem) => item.seller))],
+        items: checkoutItems
+      };
 
+      // 2. Llamar a la Server Action directamente para crear la orden en la DB
+      const orderId = await createPendingOrder(orderPayload);
+
+      if (!orderId) {
+        throw new Error("Order creation failed: No orderId returned from server action.");
+      }
+
+      // 3. Proceder con la transacción en Solana
       const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
       const { blockhash: recentBlockhash } = await connection.getLatestBlockhash();
-      const objectPayments = checkoutItems.reduce((acc: { [_: string]: { totalAmount: number, currency: string, price: number } }, item) => {
-        const { addressWallet, price, quantity, currency } = item;
-        return {
-          ...acc,
-          [addressWallet]: {
-            price,
-            totalAmount: acc[addressWallet] ? acc[addressWallet].totalAmount + (price * quantity) : (price * quantity),
-            currency,
-          }
-        }
+
+      const objectPayments = checkoutItems.reduce((acc: { [_: string]: { totalAmount: number } }, item) => {
+        const { addressWallet, price, quantity } = item;
+        acc[addressWallet] = {
+          totalAmount: (acc[addressWallet]?.totalAmount || 0) + (price * quantity)
+        };
+        return acc;
       }, {});
-      console.log(checkoutItems)
+
       const transaction = new Transaction();
-      const transferInstructions = await Promise.all(
-        Object.entries(objectPayments).map(async ([address, {
-          // totalAmount,
-          currency }]) => {
-          console.log(currency)
-          return SystemProgram.transfer({
-            fromPubkey: new PublicKey(wallet.address),
-            toPubkey: new PublicKey(address),
-            lamports: 1,
-            // Math.round((totalAmount / solanaPrice) * LAMPORTS_PER_SOL),
-          });
-        })
-      );
-
-      transferInstructions.forEach(instruction => {
-        transaction.add(instruction);
+      const transferInstructions = Object.entries(objectPayments).map(([address, { totalAmount: _totalAmount }]) => {
+        return SystemProgram.transfer({
+          fromPubkey: new PublicKey(wallet.address),
+          toPubkey: new PublicKey(address),
+          lamports: 1, // Placeholder
+        });
       });
+
+      transferInstructions.forEach(instruction => transaction.add(instruction));
       transaction.recentBlockhash = recentBlockhash;
-
       transaction.feePayer = new PublicKey(wallet.address);
-      const transactionReceipt = await sendTransaction({
-        transaction,
-        connection
-      });
 
-      setPaymentStage("confirmed");
+      // Esta es una llamada a la wallet del cliente, no es una Server Action
+      const transactionReceipt = await wallet.sendTransaction(transaction, connection);
 
       if (transactionReceipt) {
-        completeCheckout(transactionReceipt.signature, orderId);
-        return;
+        // 4. Si la transacción de Solana es exitosa, se finaliza el checkout
+        await completeCheckout(transactionReceipt, orderId);
+      } else {
+        throw new Error("Solana transaction failed to send.");
       }
+
     } catch (error) {
       console.error("Error processing payment:", error);
-      setPaymentError(true)
-      handleAlert({
-        message: "Error processing payment",
-        isError: true
-      })
-      setLoading(false)
-      setPaymentStage("initial")
-      setTimeout(() => {
-        setPaymentError(false)
-      }
-        , 1000)
-      return;
+      setPaymentError(true);
+      handleAlert({ message: "Error processing payment", isError: true });
+      setLoading(false);
+      setPaymentStage("initial");
+      setTimeout(() => setPaymentError(false), 1000);
     }
   };
 
@@ -271,7 +270,6 @@ const Checkout = () => {
     return <div>Loading...</div>; // Or a proper loading spinner
   }
 
-  console.log(checkoutItems)
 
   if (orderCompleted) {
     return (
@@ -293,7 +291,7 @@ const Checkout = () => {
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Shipping Details</h3>
               <p className="text-gray-600 dark:text-gray-400">
-                We will send a confirmation to <span className="font-medium">{address.fullName}</span> at{" "}
+                We will send a confirmation to <span className="font-medium">{address.name}</span> at{" "}
                 <span className="font-medium">{address.street}, {address.city}</span>
               </p>
               <p className="text-gray-600 dark:text-gray-400 mt-2">
@@ -378,15 +376,15 @@ const Checkout = () => {
                     <form onSubmit={handleSubmitAddress} className="p-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="md:col-span-2">
-                          <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Full Name
                           </label>
                           <input
-                            id="fullName"
-                            name="fullName"
+                            id="Name"
+                            name="name"
                             type="text"
                             required
-                            value={address.fullName}
+                            value={address.name}
                             onChange={handleAddressChange}
                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
                           />
@@ -442,8 +440,8 @@ const Checkout = () => {
                             Zip Code
                           </label>
                           <input
-                            id="zip"
-                            name="zip"
+                            id="zipCode"
+                            name="zipCode"
                             type="text"
                             required
                             value={address.zipCode}
@@ -662,8 +660,7 @@ const Checkout = () => {
                       <div className="flex justify-between">
                         <span className="text-lg font-semibold text-gray-900 dark:text-white">Total</span>
                         <span className="text-lg font-semibold text-primary">
-                          {/* ${totalPrice.toFixed(2)} */}
-                          34135
+                          {totalPrice.toFixed(2)}
                         </span>
                       </div>
                     </div>
@@ -690,7 +687,7 @@ const Checkout = () => {
                   </div>
 
                   <div className="p-6">
-                    <p className="text-gray-900 dark:text-white font-medium">{address.fullName}</p>
+                    <p className="text-gray-900 dark:text-white font-medium">{address.name}</p>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">{address.street}</p>
                     <p className="text-gray-600 dark:text-gray-400">
                       {address.city}, {address.state} {address.zipCode}

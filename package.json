@@ -12,8 +12,11 @@
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
     "@material-tailwind/react": "^2.1.10",
-    "@privy-io/react-auth": "^2.8.2",
+    "@privy-io/node": "^0.2.0",
+    "@privy-io/react-auth": "^2.25.0",
     "@privy-io/server-auth": "^1.28.2",
+    "@react-email/components": "^0.5.3",
+    "@solana/spl-token": "^0.4.14",
     "@solana/wallet-adapter-base": "^0.9.24",
     "@solana/wallet-adapter-react": "^0.15.36",
     "@solana/wallet-adapter-react-ui": "^0.9.36",
@@ -36,11 +39,13 @@
     "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-email": "^4.2.8",
     "react-hook-form": "^7.55.0",
     "react-hot-toast": "^2.5.2",
     "react-leaflet": "^5.0.0",
     "react-tooltip": "^5.28.1",
     "realm-web": "^2.0.1",
+    "resend": "^6.0.2",
     "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
@@ -53,6 +58,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.2.4",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }

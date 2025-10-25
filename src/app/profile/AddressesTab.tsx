@@ -1,6 +1,6 @@
 import { useAlert } from "@/context/AlertContext";
 import { useUser } from "@/context/UserContext";
-import { Addresses } from "@/interfaces";
+import { Address } from "@/interfaces";
 import { updateUser } from "@/lib/ServerActions/users";
 import { PencilIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
@@ -8,7 +8,7 @@ import { useState } from "react";
 export const AddressesTab = () => {
   const { userData, setUserData } = useUser()
   const { handleAlert } = useAlert()
-  const [address, setAddress] = useState<Addresses>({
+  const [address, setAddress] = useState<Address>({
     name: "",
     street: "",
     city: "",
@@ -21,8 +21,8 @@ export const AddressesTab = () => {
   const [selectedEditAddress, setSelectedEditAddress] = useState<number | null>(null);
 
   const handleUser = async (indexAddress: number | null) => {
-    const fundName = userData?.addresses.find((savedAddress) => savedAddress.name === address.name);
-    if (fundName) {
+    const findName = userData?.addresses.find((savedAddress) => savedAddress.name === address.name);
+    if (findName) {
       handleAlert({
         message: "Address name already exists",
         isError: true
@@ -36,7 +36,7 @@ export const AddressesTab = () => {
       return;
     }
 
-    const updateUserData: Addresses[] = indexAddress ?
+    const updateUserData: Address[] = indexAddress ?
       (userData?.addresses || []).map((savedAddress, index) => {
         if (indexAddress === index) {
           return {

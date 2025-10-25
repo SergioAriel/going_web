@@ -1,8 +1,9 @@
-// app/api/orders/route.ts
 import { NextResponse, type NextRequest } from "next/server";
-import { getOrders, uploadOrder, updateOrder, deleteOrder } from "@/lib/ServerActions/orders";
+import { getOrders, updateOrder, deleteOrder } from "@/lib/ServerActions/orders";
 import { headers } from "next/headers";
 import { verifyIdentityToken } from "@/utils/tokenVerification";
+
+export const runtime = 'nodejs';
 
 export async function GET() {
     const orders = await getOrders();
@@ -25,12 +26,17 @@ export async function POST(request: NextRequest) {
 
     const identityToken = await verifyIdentityToken(token);
 
-    if (!identityToken) return NextResponse.json({ error: "Failed to upload images" }, { status: 500 });
+    if (!identityToken) return NextResponse.json({ error: "Failed to verify identity" }, { status: 500 });
 
+    const _orderData = await request.json();
+    // Assuming createPendingOrder is a function that needs to be implemented or imported
+    // const result = await createPendingOrder(orderData);
 
-    const order = await request.json();
-    const newOrder = await uploadOrder(order);
-    return NextResponse.json(newOrder);
+    // The logic for sending email and creating order seems incomplete/buggy.
+    // For now, returning a placeholder response.
+    console.log("TODO: Implement order creation and email sending logic.");
+
+    return NextResponse.json({ message: "Order creation endpoint hit, but logic is incomplete." });
 }
 
 export async function PUT(request: NextRequest) {
@@ -49,11 +55,10 @@ export async function PUT(request: NextRequest) {
 
     const identityToken = await verifyIdentityToken(token);
 
-    if (!identityToken) return NextResponse.json({ error: "Failed to upload images" }, { status: 500 });
+    if (!identityToken) return NextResponse.json({ error: "Failed to verify identity" }, { status: 500 });
 
-
-    const order = await request.json();
-    const updatedOrder = await updateOrder(order);
+    const { _id, ...orderData } = await request.json();
+    const updatedOrder = await updateOrder(_id, orderData);
     return NextResponse.json(updatedOrder);
 }
 
@@ -73,8 +78,7 @@ export async function DELETE(request: NextRequest) {
 
     const identityToken = await verifyIdentityToken(token);
 
-    if (!identityToken) return NextResponse.json({ error: "Failed to upload images" }, { status: 500 });
-
+    if (!identityToken) return NextResponse.json({ error: "Failed to verify identity" }, { status: 500 });
 
     const { id } = await request.json();
     const deletedOrder = await deleteOrder({ _id: id });

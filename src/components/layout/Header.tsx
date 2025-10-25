@@ -54,7 +54,7 @@ const Header = () => {
           <Link href="/" className="flex items-center">
             <div className="w-auto h-12 relative">
               <Image
-                src="/goingLogo.svg"
+                src="/logo.svg"
                 alt="Going Marketplace"
                 width={120}
                 height={40}
@@ -85,6 +85,13 @@ const Header = () => {
               className="text-gray-600 hover:text-primary dark:text-gray-300 dark:hover:text-primary relative group"
             >
               <span>Offers</span>
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-primary transition-all duration-300 group-hover:w-full"></span>
+            </Link>
+            <Link
+              href="/business"
+              className="text-gray-600 hover:text-primary dark:text-gray-300 dark:hover:text-primary relative group"
+            >
+              <span>For Business</span>
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-primary transition-all duration-300 group-hover:w-full"></span>
             </Link>
           </nav>

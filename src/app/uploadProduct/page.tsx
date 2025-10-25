@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { DragEvent, useState } from "react";
 import Link from "next/link";
@@ -7,23 +7,25 @@ import {
   TagIcon,
   CurrencyDollarIcon,
   ChevronDownIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import { usePrivy } from "@privy-io/react-auth";
-import { Product } from "@/interfaces";
+import { Address, NewProductPayload } from "@/interfaces";
 import { useAlert } from "@/context/AlertContext";
 import { useCurrencies } from "@/context/CurrenciesContext";
+import { useUser } from "@/context/UserContext";
 
 
 const UploadProduct = () => {
-  const { user } = usePrivy();
-  const [infoProduct, setInfoProduct] = useState<Partial<Omit<Product, "price">> & { price: string }>({
-    seller: user?.id || "",
+  const { user, getAccessToken } = usePrivy(); // Destructure getAccessToken
+  const { userData } = useUser();
+  const [infoProduct, setInfoProduct] = useState<NewProductPayload>(() => ({
+    seller: user?.id,
     name: "",
     description: "",
     category: "",
-    price: "0",
+    price: 0,
     currency: "",
     stock: 0,
     location: "",
@@ -32,8 +34,18 @@ const UploadProduct = () => {
     tags: [],
     isService: false,
     addressWallet: "",
-    status: "published",
-  });
+    offerPercentage: 0,
+    rating: 0,
+    publishStatus: "published",
+    shippingType: "going_network",
+    weight_kg: 0,
+    width_cm: 0,
+    height_cm: 0,
+    depth_cm: 0,
+    isFragile: false,
+    estimatedDeliveryDays: 0,
+    pickupAddress: { street: "", city: "", state: "", zipCode: "", country: "" } as Address,
+  }));
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const { listCryptoCurrencies } = useCurrencies()
 
@@ -53,19 +65,19 @@ const UploadProduct = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    if (name === "price") {
-      setInfoProduct(prev => ({ ...prev, [name]: value })); // Almacenar como string temporalmente
-      return;
-    }
-    if (name === "stock") {
-      setInfoProduct(prev => ({ ...prev, [name]: Math.round(parseFloat(value)) || 0 }));
-      return;
-    }
     if (name === "tags") {
       setInfoProduct(prev => ({ ...prev, [name]: value.split(",").map((tag: string) => tag.trim().toLocaleLowerCase())}));
       return;
     }
-    setInfoProduct(prev => ({ ...prev, [name]: value }));
+    if (name === "pickupAddress") {
+      const addressIndex = parseInt(value, 10);
+      const selectedAddress = userData?.addresses[addressIndex];
+      if (selectedAddress) {
+        setInfoProduct(prev => ({ ...prev, pickupAddress: selectedAddress }));
+      }
+      return;
+    }
+    setInfoProduct(prev => ({ ...prev, [name]: value}));
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -103,25 +115,42 @@ const UploadProduct = () => {
   };
 
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const token = await getAccessToken();
+    if (!token) {
+        handleAlert({
+            message: "Authentication error. Please log in again.",
+            isError: true
+        });
+        return;
+    }
 
     const formDataToSend = new FormData();
 
     Object.entries(infoProduct).forEach(([key, value]) => {
-      if (key === "price") {
-        formDataToSend.append(key, parseFloat(value as string).toString()); // Convertir a número antes de enviar
+      if (key === 'pickupAddress' && value) {
+        formDataToSend.append(key, JSON.stringify(value));
       } else if (Array.isArray(value)) {
         value.forEach((item) => {
           formDataToSend.append(key, item);
         });
-      } else {
-        formDataToSend.append(key, typeof value === "boolean" ? value.toString() : String(value));
+      } else if (value !== null) {
+        formDataToSend.append(key, String(value));
       }
     });
 
-    const requiredFields = ["name", "description", "category", "price", "currency", "images"];
-    const isValid = requiredFields.every(field => infoProduct[field as keyof typeof infoProduct] !== "");
+    const requiredFields = ["name", "description", "category", "price", "currency", "images", "pickupAddress"];
+    if (infoProduct.shippingType === 'self_delivery') {
+      requiredFields.push('estimatedDeliveryDays');
+    }
+
+    const isValid = requiredFields.every(field => {
+      const value = infoProduct[field as keyof typeof infoProduct];
+      if (Array.isArray(value)) return value.length > 0;
+      return value !== "" && value !== "0";
+    });
 
     if (!isValid) {
       handleAlert({
@@ -131,16 +160,34 @@ const UploadProduct = () => {
       return;
     }
 
-    // Logic to send data to the server would go here
-    fetch("/api/products", {
-      method: "POST",
-      body: formDataToSend,
-    })
-    handleAlert({
-      message: "Product published successfully!",
-      isError: false
-    })
+    try {
+      const response = await fetch("/api/products", {
+        method: "POST",
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formDataToSend,
+      });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to publish product.");
+      }
+
+      handleAlert({
+        message: "Product published successfully!",
+        isError: false
+      });
+      // Optionally, redirect or clear the form here
+
+    } catch (error: unknown) {
+        console.error("Error publishing product:", error);
+        const message = error instanceof Error ? error.message : "An unexpected error occurred.";
+        handleAlert({
+            message,
+            isError: true
+        });
+    }
   };  
 
   return (
@@ -217,6 +264,66 @@ const UploadProduct = () => {
                     </div>
                   </div>
 
+                  <div>
+                    <label htmlFor="shippingType" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Shipping Method *
+                    </label>
+                    <div className="relative">
+                      <select
+                        id="shippingType"
+                        name="shippingType"
+                        value={infoProduct.shippingType}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white appearance-none"
+                        required
+                      >
+                        <option value="going_network">GOING Logistics Network</option>
+                        <option value="self_delivery">Own Shipping (Self-Delivery)</option>
+                      </select>
+                      <ChevronDownIcon className="h-5 w-5 text-gray-400 absolute right-3 top-3 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="pickupAddress" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Pickup Address *
+                    </label>
+                    <div className="relative">
+                      <select
+                        id="pickupAddress"
+                        name="pickupAddress"
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white appearance-none"
+                        required
+                        defaultValue=""
+                      >
+                        <option value="" disabled>Select a pickup address</option>
+                        {userData?.addresses && userData.addresses.map((address, index) => (
+                          <option key={index} value={index}>{address.name}</option>
+                        ))}
+                      </select>
+                      <ChevronDownIcon className="h-5 w-5 text-gray-400 absolute right-3 top-3 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {infoProduct.shippingType === 'self_delivery' && (
+                    <div>
+                      <label htmlFor="estimatedDeliveryDays" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Estimated Delivery Days *
+                      </label>
+                      <input
+                        type="number"
+                        id="estimatedDeliveryDays"
+                        name="estimatedDeliveryDays"
+                        value={infoProduct.estimatedDeliveryDays}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                        placeholder="e.g., 3"
+                        required
+                      />
+                    </div>
+                  )}
+
                   {/* Stock */}
                   <div>
                     <label htmlFor="stock" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -226,7 +333,7 @@ const UploadProduct = () => {
                       type="number"
                       id="stock"
                       name="stock"
-                      value={infoProduct?.stock?.toString()}
+                      value={infoProduct?.stock}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
                       placeholder="E.g. 10"
@@ -268,13 +375,13 @@ const UploadProduct = () => {
 
                   {/* Status */}
                   <div>
-                    <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label htmlFor="publishStatus" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Status
                     </label>
                     <select
-                      id="status"
-                      name="status"
-                      value={infoProduct.status}
+                      id="publishStatus"
+                      name="publishStatus"
+                      value={infoProduct.publishStatus}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
                     >
@@ -307,7 +414,7 @@ const UploadProduct = () => {
                         type="text"
                         id="tags"
                         name="tags"
-                        value={infoProduct.tags}
+                        value={Array.isArray(infoProduct.tags) ? infoProduct.tags.join(", ") : ""}
                         onChange={handleInputChange}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
                         placeholder="E.g. headphones, wireless, bluetooth (separated by commas)"
@@ -320,6 +427,46 @@ const UploadProduct = () => {
                 </div>
               </div>
 
+              {/* Physical Dimensions Section */}
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+                  Physical Dimensions (for shipping)
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="weight_kg" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Weight (kg)
+                    </label>
+                    <input type="number" id="weight_kg" name="weight_kg" value={infoProduct.weight_kg} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white" placeholder="0.0"/>
+                  </div>
+                  <div className="flex items-center pt-6">
+                    <input id="isFragile" name="isFragile" type="checkbox" checked={infoProduct.isFragile} onChange={handleCheckboxChange} className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"/>
+                    <label htmlFor="isFragile" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                      This item is fragile
+                    </label>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                  <div>
+                    <label htmlFor="width_cm" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Width (cm)
+                    </label>
+                    <input type="number" id="width_cm" name="width_cm" value={infoProduct.width_cm} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white" placeholder="0.0"/>
+                  </div>
+                  <div>
+                    <label htmlFor="height_cm" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Height (cm)
+                    </label>
+                    <input type="number" id="height_cm" name="height_cm" value={infoProduct.height_cm} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white" placeholder="0.0"/>
+                  </div>
+                  <div>
+                    <label htmlFor="depth_cm" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Depth (cm)
+                    </label>
+                    <input type="number" id="depth_cm" name="depth_cm" value={infoProduct.depth_cm} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white" placeholder="0.0"/>
+                  </div>
+                </div>
+              </div>
 
               {/* Price and Payment Methods */}
               <div className="flex flex-col gap-6 p-6 border-b border-gray-200 dark:border-gray-700">
@@ -350,7 +497,7 @@ const UploadProduct = () => {
                           No wallets linked. Please link a wallet to your account.
                         </option>
                         :
-                        user?.linkedAccounts.map((account) => {
+                        user?.linkedAccounts.map((account: { type: string; address: string; }) => {
                           if (account.type === "wallet") {
                             return (
                               <option key={account.address} value={account.address}>
@@ -408,7 +555,7 @@ const UploadProduct = () => {
                   <CurrencyDollarIcon className="h-5 w-5 text-gray-400 mr-2" />
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
                     {
-                      (parseFloat(infoProduct?.price as string) || 1) * (listCryptoCurrencies.find((crypto) => crypto.symbol === infoProduct.currency)?.price || 0)
+                      (parseFloat(infoProduct?.price.toString()) || 1) * (listCryptoCurrencies.find((crypto) => crypto.symbol === infoProduct.currency)?.price || 0)
                     } USD
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">

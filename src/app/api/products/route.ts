@@ -1,10 +1,8 @@
-import { User } from '@/interfaces';
+import { User, Address, ShippingType } from '@/interfaces';
 import client from '@/lib/mongodb';
 import { getOneProduct, getProducts } from '@/lib/ServerActions/products';
 import { v2 as cloudinary } from "cloudinary";
 import { NextRequest, NextResponse } from 'next/server';
-import { headers } from 'next/headers';
-import { verifyIdentityToken } from '@/utils/tokenVerification';
 
 
 cloudinary.config({
@@ -51,24 +49,6 @@ export async function GET(request: Request) {
 
 
 export const POST = async (request: NextRequest): Promise<NextResponse> => {
-    const requestHeaders = await headers();
-    const authorizationHeader = requestHeaders.get('authorization')
-
-    if (!authorizationHeader) {
-        return NextResponse.json({ message: 'Unauthorized - Missing Authorization header' }, { status: 401 });
-    }
-
-    const token = authorizationHeader.split(' ')[1];
-
-    if (!token) {
-        return NextResponse.json({ message: 'Unauthorized - Malformed Authorization header' }, { status: 401 });
-    }
-
-    const identityToken = await verifyIdentityToken(token);
-
-    if (!identityToken) return NextResponse.json({ error: "Failed to upload images" }, { status: 500 });
-
-
     const data = await request.formData();
     const file = data.getAll("images");
     const images = file.map((entry) => entry instanceof File ? entry : null).filter((entry): entry is File => entry !== null)
@@ -96,6 +76,9 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
         return NextResponse.json({ error: "Failed to upload images" }, { status: 500 });
     }
 
+    const pickupAddressString = data.get("pickupAddress") as string;
+    const pickupAddress: Address | null = pickupAddressString ? JSON.parse(pickupAddressString) : null;
+
     const productDb = {
         seller: data.get("seller") as string,
         name: data.get("name") as string,
@@ -106,21 +89,25 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
         stock: data.get("stock") ? parseInt(data.get("stock") as string) : 1,
         location: data.get("location") as string,
         condition: data.get("condition") as string,
+        shippingType: data.get("shippingType") as ShippingType,
+        weight_kg: data.get("weight_kg") ? parseFloat(data.get("weight_kg") as string) : 0,
+        width_cm: data.get("width_cm") ? parseFloat(data.get("width_cm") as string) : 0,
+        height_cm: data.get("height_cm") ? parseFloat(data.get("height_cm") as string) : 0,
+        depth_cm: data.get("depth_cm") ? parseFloat(data.get("depth_cm") as string) : 0,
+        isFragile: data.get("isFragile") === "true",
         images: Array.isArray(imageUrls) ? [...imageUrls.slice(1)] : [],
         tags: data.get("tags") as string,
         isService: data.get("isService") === "true",
         addressWallet: data.get("addressWallet") as string,
         mainImage: Array.isArray(imageUrls) ? imageUrls[0] : '',
-        status: data.get("status") as string
+        pickupAddress: pickupAddress,
+        publishStatus: data.get("publishStatus") as string
     };
 
     if (!file) {
         console.error("No file found in form data");
         return NextResponse.json({ error: "No file found" }, { status: 400 });
     }
-    // upload multiple images on cloudinary
-
-
 
     const db = client.db("going");
     const product = await db.collection("products").insertOne({
@@ -128,13 +115,10 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
         images: imageUrls,
     });
 
-    //udate user
-
     await db.collection<User>("users").updateOne(
         { _id: productDb.seller },
         { $push: { products: product.insertedId } }
     );
     console.log("Product added successfully:", product);
-    // Return the result
     return NextResponse.json({ result: {} }, { status: 200 });
 };

@@ -21,7 +21,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const { ready, authenticated, user } = usePrivy()
   const [userData, setUserData] = useState<User>({
     _id: "" as unknown as ObjectId,
-    name: "going",
+    fullName: "going",
     isSeller: false,
     addresses: [],
     email: "going@example.com",
@@ -60,7 +60,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           // Fetch user data or perform any necessary actions
           const defaultUserData: User = {
             _id: "" as unknown as ObjectId,
-            name: "unknown",
+            fullName: "unknown",
             addresses: [],
             isSeller: false,
             email: "",
@@ -87,7 +87,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             ...defaultUserData,
             _id: user?.id.toString(),
             // addresses: user?.linkedAccounts?.filter((account) => account.type === "wallet").map((account) => account.address),
-            name: user?.google?.name || "",
+            fullName: user?.google?.name || "",
             email: user?.google?.email || "",
           })
         } catch (error) {

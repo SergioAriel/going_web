@@ -4,8 +4,6 @@ import { CartItem, Product } from "@/interfaces";
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { useAlert } from "./AlertContext";
 
-// Definir tipo de producto para evitar uso de 'any'
-
 interface CartContextType {
   items: CartItem[];
   addToCart: (product: Product, quantity: number) => void;
@@ -19,10 +17,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const { handleAlert } = useAlert();
-  // const { userCurrency, listCryptoCurrencies } = useCurrencies()
-
   const [items, setItems] = useState<CartItem[]>([]);
-  // const [totalPrice, setTotalPrice] = useState<number>(0);
 
   useEffect(() => {
     const storedItems = localStorage.getItem("cart");
@@ -31,42 +26,45 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  // Helper function to update state and localStorage simultaneously
+  const updateCart = (newItems: CartItem[]) => {
+    setItems(newItems);
+    localStorage.setItem("cart", JSON.stringify(newItems));
+  };
+
   const addToCart = (product: Product, quantity: number) => {
     const existingItem = items.find(item => item._id === product._id);
 
     if (existingItem) {
-      const addItem = items.map(item =>
+      const newItems = items.map(item =>
         item._id === product._id
           ? { ...item, quantity: item.quantity + quantity }
           : item
       );
-      localStorage.setItem("cart", JSON.stringify(addItem));
-      setItems(addItem);
+      updateCart(newItems);
     } else {
-      const addItem = [...items, {
+      const newItems = [...items, {
         _id: product._id.toString(),
         seller: product.seller,
         name: product.name,
         price: product.price,
-        priceOffer: product.isOffer && product.offerPercentage ? Number(product.price) - (Number(product.price) * product.offerPercentage) : undefined,
         mainImage: product.mainImage,
         quantity,
         addressWallet: product.addressWallet,
         currency: product.currency,
-        offerPercentage: product.offerPercentage || 0,
+        shippingType: product.shippingType,
+        pickupAddress: product.pickupAddress, // UNIFIED
         isOffer: product.isOffer || false,
-      }]
-      localStorage.setItem("cart", JSON.stringify(addItem));
-      setItems(addItem);
+        offerPercentage: product.offerPercentage || 0,
+      }];
+      updateCart(newItems);
     }
-
-
-    handleAlert({ message: `Added to cart: ${product.name}`, isError: false })
+    handleAlert({ message: `Added to cart: ${product.name}`, isError: false });
   };
 
   const removeFromCart = (productId: string) => {
-    setItems(prevItems => prevItems.filter(item => item._id !== productId));
-    localStorage.setItem("cart", JSON.stringify(items.filter(item => item._id !== productId)))
+    const newItems = items.filter(item => item._id !== productId);
+    updateCart(newItems); // CORRECTED
   };
 
   const updateQuantity = (productId: string, quantity: number) => {
@@ -74,20 +72,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       removeFromCart(productId);
       return;
     }
-    localStorage.setItem("cart", JSON.stringify(items.map(item =>
+    const newItems = items.map(item =>
       item._id === productId ? { ...item, quantity } : item
-    )))
-
-    setItems(prevItems =>
-      prevItems.map(item =>
-        item._id === productId ? { ...item, quantity } : item
-      )
     );
+    updateCart(newItems);
   };
 
   const clearCart = () => {
     setItems([]);
-    localStorage.removeItem("cart")
+    localStorage.removeItem("cart");
   };
 
   const getTotalItems = () => {
@@ -102,7 +95,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       updateQuantity,
       clearCart,
       getTotalItems,
-      // totalPrice
     }}>
       {children}
     </CartContext.Provider>
@@ -115,4 +107,4 @@ export const useCart = () => {
     throw new Error("useCart must be used within a CartProvider");
   }
   return context;
-}; 
+};

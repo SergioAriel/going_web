@@ -32,8 +32,7 @@ const ProductCard = ({ product }: { product: Product }) => {
       message: "Please log in to add products to your wishlist."
     });
     if(!userData.wishlist.includes(product._id.toString())) {
-      const updateWishList = await updateUser({
-        _id: userData._id,
+      const updateWishList = await updateUser(userData._id.toString(), {
         wishlist: [...userData.wishlist, product._id.toString()],
       })
       if (updateWishList.status) {
@@ -43,11 +42,10 @@ const ProductCard = ({ product }: { product: Product }) => {
           wishlist: [...prevData.wishlist, product._id.toString()],
         }));
       }else {
-        console.error("Error updating wishlist:", updateWishList.error);
+        console.error("Error updating wishlist:", updateWishList.message);
       }
     } else {
-      const updateWishList = await updateUser({
-        _id: userData._id,
+      const updateWishList = await updateUser(userData._id.toString(), {
         wishlist: removeFromWishlist(product),
       })
       if (updateWishList.status) {
@@ -76,7 +74,7 @@ const ProductCard = ({ product }: { product: Product }) => {
   const handleToBuy = (e: React.MouseEvent<HTMLElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    router.push(`/checkout/${product._id}/${1}`)
+    router.push(`/checkout?productId=${product._id}&quantity=${1}`)
   }
 
   return (

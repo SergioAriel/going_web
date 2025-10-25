@@ -7,7 +7,7 @@ const ProductDetailPage = async ({ params }: { params: Promise<{ _id: string }> 
   // const [relatedProducts, setRelatedProducts] = ...;
   const { _id } = await params;
   const product = await getOneProduct(_id)
-  if (!product || product.status === 'unpublished') {
+  if (!product || product.publishStatus === 'unpublished') {
     return (
       <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-20">
         <div className="container mx-auto px-4 text-center">
