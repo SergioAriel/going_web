@@ -32,7 +32,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, isBuyer, isSeller }
               </span>
             </div>
           </div>
-          <div className="mt-2 sm:mt-0 flex items-center">
+          <div className="mt-2 sm:mt-0 flex items-center flex-shrink-0">
             <Link href={`/order/${order._id}?isSeller=${isSeller}`} className="text-primary hover:text-primary-dark flex items-center">
               View Details
               <ArrowRightIcon className="h-4 w-4 ml-1" />

@@ -50,10 +50,21 @@ export const updateOrder = async (_id: string, orderData: Partial<Omit<Order, '_
 
 export const getOrders = async (find = {}): Promise<Order[]> => {
     const db = client.db("going");
-    const ordersInDb = await db.collection<Order>("orders").find(find).toArray();
+    const ordersInDb = await db.collection("orders").find(find).toArray();
     
-    // Siempre devolver el modelo de Orden limpio a la aplicación
-    return ordersInDb;
+    // Convert complex MongoDB objects to plain objects for Client Components
+    const plainOrders = ordersInDb.map(order => ({
+        ...order,
+        _id: order._id.toString(),
+        date: new Date(order.date).toISOString(),
+        // Also map over items if they contain ObjectIds or other complex types
+        items: order.items.map(item => ({
+            ...item,
+            _id: item._id.toString(), // Assuming item._id is also an ObjectId
+        }))
+    }));
+
+    return plainOrders as Order[];
 }
 
 export const getOrder = async (orderId: string): Promise<Order | null> => {

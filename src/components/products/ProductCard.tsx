@@ -27,7 +27,7 @@ const ProductCard = ({ product }: { product: Product }) => {
 
   const toggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
-    if(userData._id === "") return handleAlert({
+    if(!userData) return handleAlert({
       isError: true,
       message: "Please log in to add products to your wishlist."
     });
@@ -74,11 +74,11 @@ const ProductCard = ({ product }: { product: Product }) => {
   const handleToBuy = (e: React.MouseEvent<HTMLElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    router.push(`/checkout?productId=${product._id}&quantity=${1}`)
+    router.push(`/marketplace/checkout?productId=${product._id}&quantity=${1}`)
   }
 
   return (
-    <Link href={`/products/${product?._id}`} className="block group">
+    <Link href={`/marketplace/products/${product?._id}`} className="block group">
       <div className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300">
 
         {/* Product Image */}
@@ -97,7 +97,7 @@ const ProductCard = ({ product }: { product: Product }) => {
               onClick={toggleWishlist}
               className="absolute top-3 left-3 p-2 bg-white/80 dark:bg-gray-800/80 rounded-full shadow hover:bg-white dark:hover:bg-gray-700 z-10"
             >
-              {userData.wishlist.includes(product._id.toString()) ? (
+              {userData?.wishlist?.includes(product._id.toString()) ? (
                 <HeartSolidIcon className="h-4 w-4 text-[#D300E5]" />
               ) : (
                 <HeartIcon className="h-4 w-4 text-gray-600 dark:text-gray-400" />

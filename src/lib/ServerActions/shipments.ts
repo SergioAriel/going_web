@@ -49,63 +49,75 @@ const toAppShipment = (shipmentInDb: ShipmentInDb): Shipment => {
 export const createShipments = async ({ items, orderId, buyer }: { items: CartItem[], orderId: string, buyer: Buyer }) => {
     const db = client.db("going")
 
-    const divisionShipments = Object.groupBy(items, item => `${item.shippingType}-${item.seller}`);
+    try {
+        const divisionShipments = Object.groupBy(items, item => {
+            if (!item.shippingType || !item.seller || !item.pickupAddress) {
+                throw new Error(`Producto '${item.name}' (ID: ${item._id}) tiene datos de logística incompletos (seller, shippingType, o pickupAddress).`);
+            }
+            return `${item.shippingType}-${item.seller}`;
+        });
 
-    const cleanShipments: Shipment[] = Object.entries(divisionShipments)
-        .map(([key, shipmentItems]) => {
-            const [shippingType, sellerId] = key.split("-");
+        const cleanShipments: Shipment[] = Object.entries(divisionShipments)
+            .map(([key, shipmentItems]) => {
+                const [shippingType, sellerId] = key.split("-");
 
-            if (!shipmentItems || shipmentItems.length === 0) {
+                if (!shipmentItems || shipmentItems.length === 0) {
+                    return undefined;
+                }
+
+                const geocodedPickupAddress = ensureGeocoded(shipmentItems[0].pickupAddress);
+                const geocodedDeliveryAddress = ensureGeocoded(buyer.address);
+
+                if (shippingType === 'going_network') {
+                    const shipment: GoingNetworkShipment = {
+                        orderId,
+                        sellerId,
+                        buyerId: buyer._id!,
+                        shippingType: 'going_network',
+                        deliveryAddress: geocodedDeliveryAddress,
+                        pickupAddress: geocodedPickupAddress,
+                        items: shipmentItems,
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                        status: 'pending',
+                    };
+                    return shipment;
+                } else if (shippingType === 'self_delivery') {
+                    const shipment: SelfDeliveryShipment = {
+                        orderId,
+                        sellerId,
+                        buyerId: buyer._id!,
+                        shippingType: 'self_delivery',
+                        deliveryAddress: geocodedDeliveryAddress,
+                        pickupAddress: geocodedPickupAddress,
+                        items: shipmentItems,
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                        status: 'shipped_by_seller',
+                    };
+                    return shipment;
+                }
+
                 return undefined;
-            }
+            })
+            .filter((shipment): shipment is Shipment => shipment !== undefined);
 
-            // Ensure addresses are geocoded before creating the shipment.
-            const geocodedPickupAddress = ensureGeocoded(shipmentItems[0].pickupAddress);
-            const geocodedDeliveryAddress = ensureGeocoded(buyer.address);
+        if (cleanShipments.length === 0) {
+            console.log("No shipments to create after filtering.");
+            return [];
+        }
 
-            if (shippingType === 'going_network') {
-                const shipment: GoingNetworkShipment = {
-                    orderId,
-                    sellerId,
-                    buyerId: buyer._id!,
-                    shippingType: 'going_network',
-                    deliveryAddress: geocodedDeliveryAddress,
-                    pickupAddress: geocodedPickupAddress,
-                    items: shipmentItems,
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                    status: 'pending',
-                };
-                return shipment;
-            } else if (shippingType === 'self_delivery') {
-                const shipment: SelfDeliveryShipment = {
-                    orderId,
-                    sellerId,
-                    buyerId: buyer._id!,
-                    shippingType: 'self_delivery',
-                    deliveryAddress: geocodedDeliveryAddress,
-                    pickupAddress: geocodedPickupAddress,
-                    items: shipmentItems,
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                    status: 'shipped_by_seller',
-                };
-                return shipment;
-            }
+        const shipmentsToInsert = cleanShipments.map(toShipmentInDb);
 
-            return undefined;
-        })
-        .filter((shipment): shipment is Shipment => shipment !== undefined);
+        const result = await db.collection<Omit<ShipmentInDb, '_id'>>("shipments").insertMany(shipmentsToInsert);
 
-    if (cleanShipments.length === 0) {
-        return [];
+        return result.insertedIds;
+
+    } catch (error: any) {
+        console.error("Error in createShipments:", error.message);
+        // Re-throw the specific error to be caught by the client-side
+        throw new Error(error.message || "An unexpected error occurred in createShipments.");
     }
-
-    const shipmentsToInsert = cleanShipments.map(toShipmentInDb);
-
-    const result = await db.collection<Omit<ShipmentInDb, '_id'>>("shipments").insertMany(shipmentsToInsert);
-
-    return result.insertedIds;
 }
 
 export const getShipments = async (find = {}): Promise<Shipment[]> => {

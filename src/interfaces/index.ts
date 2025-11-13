@@ -26,7 +26,7 @@ export interface GeocodedAddress extends Address {
 }
 
 export interface User {
-  _id: ObjectId | string;
+  _id: string;
   fullName: string;
   addresses: Address[];
   email: string;
@@ -41,6 +41,7 @@ export interface User {
   telegram: string;
   facebook: string;
   isSeller: boolean;
+  isLogisticsClient: boolean;
   isDriver?: boolean;
   companyId?: string; // ID of the company this user owns/belongs to
   driverDetails?: {

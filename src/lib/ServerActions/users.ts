@@ -2,7 +2,7 @@
 
 import { User, Address } from "@/interfaces";
 import client from "../mongodb";
-import { FindOneAndUpdateOptions, ObjectId } from "mongodb";
+import { FindOneAndUpdateOptions } from "mongodb";
 
 // Placeholder for a real geocoding service
 const geocodeAddress = async (address: Address): Promise<{ lat: number; lon: number } | null> => {
@@ -59,7 +59,7 @@ const db = client.db("going");
     }
 }
 
-export const uploadUser = async (user: Omit<User, '_id'> & { _id: string }) => {
+export const uploadUser = async (user: User) => {
     console.log("uploading user", user)
     const db = client.db("going");
     try {
@@ -67,10 +67,10 @@ export const uploadUser = async (user: Omit<User, '_id'> & { _id: string }) => {
 
         const userToInsert = {
             ...userData,
-            _id: new ObjectId(_id), // Privy DID is used as MongoDB _id
+            _id: _id, // Use the Privy DID string directly as the _id
         };
 
-        const result = await db.collection("users").insertOne(
+        const result = await db.collection<User>("users").insertOne(
             userToInsert
         );
         

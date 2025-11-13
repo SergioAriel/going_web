@@ -2,10 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 import client from "@/lib/mongodb";
-import { AppProviders } from "@/components/layout/AppProvider";
+import { GlobalProviders } from '@/providers/GlobalProviders';
 import { SocketProvider } from "@/context/SocketContext";
 
 
@@ -71,15 +69,11 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
-        <AppProviders>
+        <GlobalProviders>
           <SocketProvider>
-            <Header />
-            <main className="flex-grow">
-              {children}
-            </main>
-            <Footer />
+            {children}
           </SocketProvider>
-        </AppProviders>
+        </GlobalProviders>
       </body>
     </html >
   );

@@ -5,7 +5,6 @@ import { useUser } from "./UserContext";
 import { getCurrencies } from "@/lib/ServerActions/cryptocurrencies";
 import { Currency } from "@/interfaces";
 
-
 interface CurrenciesContextType {
 	listCryptoCurrencies: Currency[];
 	userCurrency: {
@@ -17,23 +16,34 @@ interface CurrenciesContextType {
 const CurrenciesContext = createContext<CurrenciesContextType | undefined>(undefined)
 
 export const CurrenciesProvider = ({ children }: { children: React.ReactNode }) => {
-	const { userData } = useUser();
+	const { userData, loading: isUserLoading } = useUser();
 	const [listCryptoCurrencies, setCurrencies] = useState<Currency[]>([])
+	
+	// Initialize with a safe, default value
 	const [userCurrency, setUserCurrency] = useState({
-		currency: userData.settings.currency,
-		price: 0
+		currency: 'USD', // Default currency
+		price: 1 // Default price for USD
 	});
 
 	useEffect(() => {
-		(async () => {
+		const initializeCurrencies = async () => {
 			const currencies:Currency[] = await getCurrencies();
 			setCurrencies(currencies);
-			setUserCurrency({
-				currency: userData.settings.currency,
-				price: currencies.find((currency: Currency) => currency.symbol === userData.settings.currency)?.price || 0
-			});
-		})()
-	}, [userData]);
+
+			// Only set the user-specific currency once userData is loaded and available
+			if (userData && userData.settings.currency) {
+				setUserCurrency({
+					currency: userData.settings.currency,
+					price: currencies.find((currency: Currency) => currency.symbol === userData.settings.currency)?.price || 0
+				});
+			}
+		};
+
+		// Do not run the effect until the user data has been loaded.
+		if (!isUserLoading) {
+			initializeCurrencies();
+		}
+	}, [userData, isUserLoading]);
 
 	return (
 		<CurrenciesContext.Provider value={{ listCryptoCurrencies, userCurrency }}>
