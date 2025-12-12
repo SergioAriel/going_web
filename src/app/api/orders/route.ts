@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getOrders, updateOrder, deleteOrder } from "@/lib/ServerActions/orders";
+import { getOrders, updateOrder, deleteOrder, createPendingOrder } from "@/lib/ServerActions/orders";
 import { headers } from "next/headers";
 import { verifyIdentityToken } from "@/utils/tokenVerification";
 
@@ -29,14 +29,10 @@ export async function POST(request: NextRequest) {
     if (!identityToken) return NextResponse.json({ error: "Failed to verify identity" }, { status: 500 });
 
     const _orderData = await request.json();
-    // Assuming createPendingOrder is a function that needs to be implemented or imported
-    // const result = await createPendingOrder(orderData);
 
-    // The logic for sending email and creating order seems incomplete/buggy.
-    // For now, returning a placeholder response.
-    console.log("TODO: Implement order creation and email sending logic.");
+    const result = await createPendingOrder(_orderData);
 
-    return NextResponse.json({ message: "Order creation endpoint hit, but logic is incomplete." });
+    return NextResponse.json({ insertedId: result });
 }
 
 export async function PUT(request: NextRequest) {

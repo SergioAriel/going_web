@@ -11,32 +11,34 @@ import {
   ArrowLeftEndOnRectangleIcon,
   CogIcon,
   CubeIcon,
-  HomeIcon
+  HomeIcon,
+  TagIcon // Using TagIcon for sales, seems appropriate
 } from "@heroicons/react/24/outline";
 import { useLogin, useLogout, usePrivy } from "@privy-io/react-auth";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AccountTab } from "./AccountTab";
-import { OrdersTab } from "./OrdersTab";
 import { WishlistTab } from "./WishlistTab";
 import { PaymentTab } from "./PaymentTab";
 import { AddressesTab } from "./AddressesTab";
 import { NotificationsTab } from "./NotificationsTab";
 import { SettingsTab } from "./SettingsTab";
-// import { SellingTab } from "./SellingTab";
 import { ShipmentsTab } from "./ShipmentsTab";
 import { useUser } from "@/context/UserContext";
-import { SalesTab } from "./SalesTab";
+import { PurchaseHistoryTab } from "./PurchaseHistoryTab";
+import { SalesHistoryTab } from "./SalesHistoryTab";
+import { ProductsTab } from "./ProductsTab";
 
 const baseTabs = [
   { id: "account", name: "My Account", icon: UserIcon },
-  { id: "purchases", name: "My Purchases", icon: ShoppingBagIcon },
+  { id: "purchase-history", name: "My Purchases", icon: ShoppingBagIcon },
   { id: "addresses", name: "My Addresses", icon: HomeIcon },
   { id: "payment", name: "Wallets", icon: CreditCardIcon },
   { id: "settings", name: "Settings", icon: CogIcon },
 ];
 
 const sellerTabs = [
-  { id: "selling", name: "Selling", icon: CubeIcon },
+  { id: "my-products", name: "My Products", icon: CubeIcon },
+  { id: "sales-history", name: "My Sales", icon: TagIcon },
   { id: "shipments", name: "Shipments", icon: TruckIcon },
 ];
 
@@ -76,12 +78,13 @@ const ProfileContent = () => {
   // Define the mapping from tab ID to component
   const tabsContent = {
     account: <AccountTab />,
-    purchases: <OrdersTab />, // This will now be the purchases tab
+    'purchase-history': <PurchaseHistoryTab />,
     wishlist: <WishlistTab />,
     payment: <PaymentTab />,
     addresses: <AddressesTab />,
     notifications: <NotificationsTab />,
-    selling: <SalesTab />,
+    'my-products': <ProductsTab />,
+    'sales-history': <SalesHistoryTab />,
     shipments: <ShipmentsTab />,
     settings: <SettingsTab />,
   };
@@ -93,8 +96,6 @@ const ProfileContent = () => {
       console.error("Login failed:", error);
     }
   };
-
-  console.log(activeTab)
 
   return (
     <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-10">
@@ -129,7 +130,7 @@ const ProfileContent = () => {
                   displayedTabs.map((tab) => (
                       <button
                         key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
+                        onClick={() => router.push(`/marketplace/profile?tab=${tab.id}`)}
                         disabled={!authenticated && tab.id !== 'settings'}
                         className={
                           `w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed 

@@ -20,8 +20,8 @@ import { useUser } from "@/context/UserContext";
 const UploadProduct = () => {
   const { user, getAccessToken } = usePrivy(); // Destructure getAccessToken
   const { userData } = useUser();
-  const [infoProduct, setInfoProduct] = useState<NewProductPayload>(() => ({
-    seller: user?.id,
+  const [infoProduct, setInfoProduct] = useState<NewProductPayload>({
+    seller: user?.id || "",
     name: "",
     description: "",
     category: "",
@@ -44,8 +44,8 @@ const UploadProduct = () => {
     depth_cm: 0,
     isFragile: false,
     estimatedDeliveryDays: 0,
-    pickupAddress: { street: "", city: "", state: "", zipCode: "", country: "" } as Address,
-  }));
+    pickupAddress: { street: "", city: "", state: "", zipCode: "", country: "" } as Omit<Address, 'fullName'>,
+  });
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const { listCryptoCurrencies } = useCurrencies()
 
@@ -63,10 +63,12 @@ const UploadProduct = () => {
     { name: "Other", value: "other" },
   ];
 
+
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     if (name === "tags") {
-      setInfoProduct(prev => ({ ...prev, [name]: value.split(",").map((tag: string) => tag.trim().toLocaleLowerCase())}));
+      setInfoProduct(prev => ({ ...prev, [name]: value.split(",").map((tag: string) => tag.trim().toLocaleLowerCase()) }));
       return;
     }
     if (name === "pickupAddress") {
@@ -77,7 +79,7 @@ const UploadProduct = () => {
       }
       return;
     }
-    setInfoProduct(prev => ({ ...prev, [name]: value}));
+    setInfoProduct(prev => ({ ...prev, [name]: value }));
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -120,11 +122,11 @@ const UploadProduct = () => {
 
     const token = await getAccessToken();
     if (!token) {
-        handleAlert({
-            message: "Authentication error. Please log in again.",
-            isError: true
-        });
-        return;
+      handleAlert({
+        message: "Authentication error. Please log in again.",
+        isError: true
+      });
+      return;
     }
 
     const formDataToSend = new FormData();
@@ -181,14 +183,14 @@ const UploadProduct = () => {
       // Optionally, redirect or clear the form here
 
     } catch (error: unknown) {
-        console.error("Error publishing product:", error);
-        const message = error instanceof Error ? error.message : "An unexpected error occurred.";
-        handleAlert({
-            message,
-            isError: true
-        });
+      console.error("Error publishing product:", error);
+      const message = error instanceof Error ? error.message : "An unexpected error occurred.";
+      handleAlert({
+        message,
+        isError: true
+      });
     }
-  };  
+  };
 
   return (
     <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-10">
@@ -299,7 +301,7 @@ const UploadProduct = () => {
                       >
                         <option value="" disabled>Select a pickup address</option>
                         {userData?.addresses && userData.addresses.map((address, index) => (
-                          <option key={index} value={index}>{address.name}</option>
+                          <option key={index} value={index}>{address.fullName}</option>
                         ))}
                       </select>
                       <ChevronDownIcon className="h-5 w-5 text-gray-400 absolute right-3 top-3 pointer-events-none" />
@@ -437,10 +439,10 @@ const UploadProduct = () => {
                     <label htmlFor="weight_kg" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Weight (kg)
                     </label>
-                    <input type="number" id="weight_kg" name="weight_kg" value={infoProduct.weight_kg} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white" placeholder="0.0"/>
+                    <input type="number" id="weight_kg" name="weight_kg" value={infoProduct.weight_kg} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white" placeholder="0.0" />
                   </div>
                   <div className="flex items-center pt-6">
-                    <input id="isFragile" name="isFragile" type="checkbox" checked={infoProduct.isFragile} onChange={handleCheckboxChange} className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"/>
+                    <input id="isFragile" name="isFragile" type="checkbox" checked={infoProduct.isFragile} onChange={handleCheckboxChange} className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded" />
                     <label htmlFor="isFragile" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
                       This item is fragile
                     </label>
@@ -451,19 +453,19 @@ const UploadProduct = () => {
                     <label htmlFor="width_cm" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Width (cm)
                     </label>
-                    <input type="number" id="width_cm" name="width_cm" value={infoProduct.width_cm} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white" placeholder="0.0"/>
+                    <input type="number" id="width_cm" name="width_cm" value={infoProduct.width_cm} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white" placeholder="0.0" />
                   </div>
                   <div>
                     <label htmlFor="height_cm" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Height (cm)
                     </label>
-                    <input type="number" id="height_cm" name="height_cm" value={infoProduct.height_cm} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white" placeholder="0.0"/>
+                    <input type="number" id="height_cm" name="height_cm" value={infoProduct.height_cm} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white" placeholder="0.0" />
                   </div>
                   <div>
                     <label htmlFor="depth_cm" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Depth (cm)
                     </label>
-                    <input type="number" id="depth_cm" name="depth_cm" value={infoProduct.depth_cm} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white" placeholder="0.0"/>
+                    <input type="number" id="depth_cm" name="depth_cm" value={infoProduct.depth_cm} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white" placeholder="0.0" />
                   </div>
                 </div>
               </div>
@@ -484,7 +486,7 @@ const UploadProduct = () => {
                   <select
                     id="addressWallet"
                     name="addressWallet"
-                    value={ infoProduct?.addressWallet
+                    value={infoProduct?.addressWallet
                       // !!(user?.linkedAccounts[0]?.type === "wallet") ? user?.linkedAccounts[0]?.address : ""
                     }
                     onChange={handleInputChange}
@@ -497,8 +499,8 @@ const UploadProduct = () => {
                           No wallets linked. Please link a wallet to your account.
                         </option>
                         :
-                        user?.linkedAccounts.map((account: { type: string; address: string; }) => {
-                          if (account.type === "wallet") {
+                        user?.linkedAccounts.map((account) => {
+                          if (account.type === "wallet" && "address" in account) {
                             return (
                               <option key={account.address} value={account.address}>
                                 {account.address}

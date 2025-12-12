@@ -8,13 +8,13 @@ export const SettingsTab = () => {
     if (!userData) return;
     const { name, value } = event.target;
 
-    setUserData((prevData) => ({
-      ...prevData,
+    setUserData({
+      ...userData,
       settings: {
-        ...prevData.settings,
+        ...userData.settings,
         [name]: value,
       },
-    }));
+    });
   };
 
 

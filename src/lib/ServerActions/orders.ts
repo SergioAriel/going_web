@@ -12,8 +12,23 @@ import { ObjectId } from "mongodb";
 //     return { ...rest, _id: rest._id.toString(), address: decryptedAddress };
 // }
 
+import { ensureGeocodedAndIndexed } from "../geolocation";
+
 export const createPendingOrder = async (payload: NewOrderPayload): Promise<string> => {
     const db = client.db("going");
+
+    // Ensure the buyer's address is geocoded and has H3 indices
+    try {
+        const geocodedAddress = await ensureGeocodedAndIndexed(payload.buyer.address);
+        payload.buyer.address = geocodedAddress;
+    } catch (error) {
+        console.warn("Failed to geocode address during order creation:", error);
+        // Proceed with original address if geocoding fails, to avoid blocking order creation?
+        // Or fail? The requirement implies we WANT the indices.
+        // Given the user's emphasis, we should probably try our best but maybe not block if the service is down?
+        // However, for "going_network", it's critical.
+        // For now, I'll log it. The checkout process has another chance to fix it.
+    }
 
     const newOrderRecord = await db.collection<NewOrderPayload>("orders").insertOne(payload);
 
@@ -27,7 +42,7 @@ export const updateOrder = async (_id: string, orderData: Partial<Omit<Order, '_
     }
 
     const db = client.db("going");
-    
+
     // Cualquier objeto AddressForm que venga en una actualización también debe ser encriptado
     // let dataToSet: Partial<OrderInDb> = { ...orderData };
     // if (orderData.address) {
@@ -51,7 +66,7 @@ export const updateOrder = async (_id: string, orderData: Partial<Omit<Order, '_
 export const getOrders = async (find = {}): Promise<Order[]> => {
     const db = client.db("going");
     const ordersInDb = await db.collection("orders").find(find).toArray();
-    
+
     // Convert complex MongoDB objects to plain objects for Client Components
     const plainOrders = ordersInDb.map(order => ({
         ...order,

@@ -8,21 +8,27 @@ export type ShippingType = 'going_network' | 'self_delivery';
 // --- Entidades Principales ---
 
 export interface Address {
-  name: string;
+  fullName: string; // Canonical field for the person/business name at this address
   street: string;
   city: string;
   state: string;
   zipCode: string;
   country: string;
-  phone: string;
-  email: string;
   lat?: number;
   lon?: number; // Opcional en la entrada, obligatorio en el sistema.
+  h3Index?: string; // Level 9 (Legacy/Default)
+  h3IndexL6?: string; // Level 6 (Macro Zone - Grouping)
+  h3IndexL8?: string; // Level 8 (Micro Zone - Filtering)
+  instructions?: string; // Delivery instructions
+  phone?: string; // Contact phone number
 }
 
 export interface GeocodedAddress extends Address {
   lat: number;
   lon: number;
+  h3Index: string;
+  h3IndexL6: string;
+  h3IndexL8: string;
 }
 
 export interface User {
@@ -77,7 +83,7 @@ export interface CartItem {
   addressWallet: string;
   currency: string;
   shippingType: ShippingType;
-  pickupAddress: Address; // La dirección del producto se copia aquí.
+  pickupAddress: Omit<Address, 'fullName'>; // La dirección del producto se copia aquí.
   weight_kg?: number;
   width_cm?: number;
   height_cm?: number;
@@ -86,6 +92,7 @@ export interface CartItem {
   quantity: number;
   isOffer?: boolean;
   offerPercentage?: number;
+  volume_m3?: number;
 }
 
 export interface Order {
@@ -96,6 +103,8 @@ export interface Order {
     walletAddress: string;
     _id?: string;
     address: Address; // La dirección del comprador puede no estar geocodificada aún.
+    email: string;
+    phone: string;
   };
   sellers: string[];
   shipments: string[];
@@ -115,6 +124,7 @@ export interface BaseShipment {
   items: CartItem[];
   createdAt: Date;
   updatedAt: Date;
+  price?: number;
 }
 
 export interface GoingNetworkShipment extends BaseShipment {
@@ -200,10 +210,9 @@ export interface NewProductPayload {
   price: number;
   currency: string;
   shippingType: ShippingType;
-  pickupAddress: Address; // En el producto, la dirección puede no estar geocodificada aún.
+  pickupAddress: Omit<Address, 'fullName'>; // En el producto, la dirección puede no estar geocodificada aún.
   publishStatus: "published" | "unpublished";
-  images: Array< File>;
-
+  images: Array<File>;
   stock: number;
   location?: string;
   condition?: string;
@@ -231,6 +240,8 @@ export interface CheckoutPayload {
     walletAddress: string;
     _id?: string;
     address: Address;
+    email: string;
+    phone: string;
   };
   sellers: string[];
   items: CartItem[];

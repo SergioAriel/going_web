@@ -77,7 +77,7 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
     }
 
     const pickupAddressString = data.get("pickupAddress") as string;
-    const pickupAddress: Address | null = pickupAddressString ? JSON.parse(pickupAddressString) : null;
+    const pickupAddress: Omit<Address, 'name'> = JSON.parse(pickupAddressString);
 
     const productDb = {
         seller: data.get("seller") as string,

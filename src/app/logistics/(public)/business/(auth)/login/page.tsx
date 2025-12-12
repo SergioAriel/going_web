@@ -11,16 +11,19 @@ const LoginPage = () => {
   const { user: appUser, isLoading } = useUser();
 
   useEffect(() => {
-    // Wait for both Privy auth and our app's user profile to be loaded.
-    if (authenticated && !isLoading && appUser) {
-      // Check if the user is already a logistics client.
-      if (appUser.isLogisticsClient) {
-        // If yes, send them to the dashboard.
-        router.push('/logistics/dashboard');
-      } else {
-        // If no, this is a new user for the logistics service. Send them to onboarding.
-        router.push('/logistics/business/onboarding');
+    // Wait for Privy auth to be ready
+    if (authenticated) {
+      // If we have the app user loaded
+      if (!isLoading && appUser) {
+        if (appUser.isLogisticsClient) {
+          router.push('/logistics/dashboard');
+        } else {
+          router.push('/logistics/business/onboarding');
+        }
       }
+      // Fallback: If authenticated but appUser is taking too long or failed, 
+      // we might want to redirect to dashboard anyway and let the dashboard handle the user fetch/check.
+      // However, for now, let's just ensure we don't get stuck.
     }
   }, [authenticated, appUser, isLoading, router]);
 

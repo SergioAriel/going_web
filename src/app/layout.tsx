@@ -5,6 +5,7 @@ import "leaflet/dist/leaflet.css";
 import client from "@/lib/mongodb";
 import { GlobalProviders } from '@/providers/GlobalProviders';
 import { SocketProvider } from "@/context/SocketContext";
+import ConsoleSuppressor from "@/components/ConsoleSuppressor";
 
 
 const geistSans = Geist({
@@ -69,6 +70,7 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
+        <ConsoleSuppressor />
         <GlobalProviders>
           <SocketProvider>
             {children}

@@ -3,7 +3,6 @@ import { headers } from 'next/headers';
 import { verifyIdentityToken } from '@/utils/tokenVerification';
 import client from "@/lib/mongodb";
 import { User } from "@/interfaces";
-import { ObjectId } from "mongodb";
 
 // NOTE: This route is not using Edge runtime because verifyIdentityToken uses Node.js APIs.
 // We should add `export const runtime = 'nodejs';` if we weren't using the server-only package.
@@ -34,14 +33,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     let user;
 
     try {
-        if (!ObjectId.isValid(targetUserId)) {
-            return NextResponse.json({ error: "Invalid User ID format" }, { status: 400 });
-        }
-        const query = { _id: new ObjectId(targetUserId) };
 
         // If the requester is viewing their own profile, return all data
         if (requestingUserId && requestingUserId === targetUserId) {
-            user = await db.collection<User>("users").findOne(query);
+            user = await db.collection<User>("users").findOne({ _id: targetUserId });
         } else {
             // Otherwise, return only public data using a projection
             const publicProjection = {
@@ -53,7 +48,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
                 isSeller: 1,
             };
             user = await db.collection<User>("users").findOne(
-                query,
+                { _id: targetUserId },
                 { projection: publicProjection }
             );
         }

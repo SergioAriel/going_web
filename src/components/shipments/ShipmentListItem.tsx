@@ -18,20 +18,33 @@ const StatusBadge = ({ status }: { status: string }) => {
   return <span className={`${baseClasses} ${classes}`}>{status.replace(/_/g, ' ').toUpperCase()}</span>;
 };
 
-const ShipmentListItem = ({ shipment }: { shipment: Shipment }) => {
+const ShipmentListItem = ({ shipment, onTrack }: { shipment: Shipment, onTrack?: () => void }) => {
   return (
     <div className="bg-gray-800 p-4 rounded-lg shadow-md mb-4 flex justify-between items-center">
       <div>
         <p className="text-sm text-gray-400">ID: {shipment._id}</p>
         <h3 className="text-lg font-bold text-white">
-          {shipment.pickupAddress.city} to {shipment.deliveryAddress.city}
+          {shipment.pickupAddress.fullName} → {shipment.deliveryAddress.fullName}
         </h3>
         <p className="text-sm text-gray-300">
+          {shipment.pickupAddress.street} → {shipment.deliveryAddress.street}
+        </p>
+        <p className="text-xs text-gray-500 mt-1">
           Created: {new Date(shipment.createdAt).toLocaleDateString()}
         </p>
       </div>
       <div className="flex items-center space-x-4">
         <StatusBadge status={shipment.status} />
+
+        {onTrack && (
+          <button
+            onClick={onTrack}
+            className="text-white bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm font-medium transition"
+          >
+            Track
+          </button>
+        )}
+
         <Link href={`/logistics/shipments/${shipment._id}`} className="text-primary hover:underline">
           View Details
         </Link>

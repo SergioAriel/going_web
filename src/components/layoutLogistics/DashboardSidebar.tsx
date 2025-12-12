@@ -5,7 +5,9 @@ import {
   Cog6ToothIcon,
   ChartBarIcon,
   TruckIcon,
-  HomeIcon
+  HomeIcon,
+  MapPinIcon,
+  CreditCardIcon
 } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 
@@ -34,6 +36,12 @@ const DashboardSidebar = () => {
         <ul className="space-y-2">
           <li>
             <SidebarLink href="/logistics/dashboard" icon={HomeIcon}>Dashboard</SidebarLink>
+          </li>
+          <li>
+            <SidebarLink href="/logistics/dashboard/addresses" icon={MapPinIcon}>Addresses</SidebarLink>
+          </li>
+          <li>
+            <SidebarLink href="/logistics/dashboard/wallet" icon={CreditCardIcon}>Wallet</SidebarLink>
           </li>
           <li>
             <SidebarLink href="/logistics/shipments" icon={TruckIcon}>Shipments</SidebarLink>

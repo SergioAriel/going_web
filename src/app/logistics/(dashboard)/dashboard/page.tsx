@@ -1,56 +1,26 @@
 'use client';
 
+import Link from 'next/link';
 import { usePrivy } from '@privy-io/react-auth';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useUser } from '@/context/UserContext';
+// import { useUser } from '@/context/UserContext';
 import { getShipments } from '@/lib/ServerActions/shipments';
 import { Shipment } from '@/interfaces';
 import ShipmentList from '@/components/shipments/ShipmentList';
+import { useUser } from '@/context/UserContext';
 
-// --- MOCK DATA ---
-// TODO: Remove this when re-activating real data fetching.
-const mockShipments: Shipment[] = [
-  {
-    _id: 'shipment_1',
-    orderId: 'order_A',
-    sellerId: 'user_123',
-    buyerId: 'user_456',
-    shippingType: 'going_network',
-    status: 'ready_to_ship',
-    deliveryAddress: { name: 'Jane Doe', street: '123 Main St', city: 'Metropolis', state: 'NY', zipCode: '10001', country: 'USA', phone: '555-1234', email: 'jane@example.com', lat: 40.7128, lon: -74.0060 },
-    pickupAddress: { name: 'John Smith', street: '456 Oak Ave', city: 'Gotham', state: 'NJ', zipCode: '07001', country: 'USA', phone: '555-5678', email: 'john@example.com', lat: 40.7357, lon: -74.1724 },
-    items: [{ _id: 'prod_1', name: 'Vintage T-Shirt', price: 25, quantity: 1, mainImage: '/placeholder.svg', seller: 'user_123', addressWallet: 'abc', currency: 'SOL', shippingType: 'going_network', pickupAddress: { name: 'John Smith', street: '456 Oak Ave', city: 'Gotham', state: 'NJ', zipCode: '07001', country: 'USA', phone: '555-5678', email: 'john@example.com' } }],
-    createdAt: new Date('2024-05-20T10:00:00Z'),
-    updatedAt: new Date('2024-05-20T12:30:00Z'),
-  },
-  {
-    _id: 'shipment_2',
-    orderId: 'order_B',
-    sellerId: 'user_123',
-    buyerId: 'user_789',
-    shippingType: 'going_network',
-    status: 'in_transit',
-    deliveryAddress: { name: 'Peter Parker', street: '789 Web St', city: 'Queens', state: 'NY', zipCode: '11367', country: 'USA', phone: '555-1111', email: 'pete@example.com', lat: 40.742, lon: -73.8223 },
-    pickupAddress: { name: 'John Smith', street: '456 Oak Ave', city: 'Gotham', state: 'NJ', zipCode: '07001', country: 'USA', phone: '555-5678', email: 'john@example.com', lat: 40.7357, lon: -74.1724 },
-    items: [{ _id: 'prod_2', name: 'Action Figure', price: 50, quantity: 1, mainImage: '/placeholder.svg', seller: 'user_123', addressWallet: 'abc', currency: 'SOL', shippingType: 'going_network', pickupAddress: { name: 'John Smith', street: '456 Oak Ave', city: 'Gotham', state: 'NJ', zipCode: '07001', country: 'USA', phone: '555-5678', email: 'john@example.com' } }],
-    createdAt: new Date('2024-05-19T14:00:00Z'),
-    updatedAt: new Date('2024-05-20T09:00:00Z'),
-  },
-];
-// --- END MOCK DATA ---
+
 
 const DashboardPage = () => {
   const router = useRouter();
   const { ready, authenticated } = usePrivy();
-  const { user: appUser } = useUser();
-  
-  // For now, we use mock data.
-  const [shipments, setShipments] = useState<Shipment[]>(mockShipments);
-  const [isLoading, setIsLoading] = useState(false); // Not loading mock data.
+  const { userData: appUser } = useUser();
 
-  /*
-  // REAL DATA FETCHING LOGIC - Temporarily disabled
+  const [shipments, setShipments] = useState<Shipment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // REAL DATA FETCHING LOGIC
   useEffect(() => {
     // Once we have the app user, fetch their shipments
     if (appUser?._id) {
@@ -69,7 +39,6 @@ const DashboardPage = () => {
       fetchShipments();
     }
   }, [appUser]);
-  */
 
   // This effect handles authentication. If Privy is ready and user is not logged in, redirect.
   useEffect(() => {
@@ -95,10 +64,18 @@ const DashboardPage = () => {
   // If authenticated, render the dashboard.
   return (
     <div className="p-6 sm:p-10">
-      <h1 className="text-3xl font-bold tracking-tight text-white mb-8">
-        Active Shipments
-      </h1>
-      
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold tracking-tight text-white">
+          Active Shipments
+        </h1>
+        <Link
+          href="/logistics/dashboard/upload"
+          className="bg-primary px-4 py-2 rounded-md text-white font-semibold hover:bg-primary-dark transition"
+        >
+          + New Shipment
+        </Link>
+      </div>
+
       {isLoading ? (
         <p className="text-gray-400">Loading shipments...</p>
       ) : (

@@ -24,10 +24,10 @@ const DashboardHeader = () => {
           </div>
         </Link>
         <div className="flex items-center">
-          <Link href="/logistics/dashboard" className="text-gray-600 dark:text-gray-300 hover:text-primary px-4">Dashboard</Link>
-          <Link href="/logistics/billing" className="text-gray-600 dark:text-gray-300 hover:text-primary px-4">Billing</Link>
-          <Link href="/logistics/settings" className="text-gray-600 dark:text-gray-300 hover:text-primary px-4">Settings</Link>
-          <button onClick={logout} className="text-gray-600 dark:text-gray-300 hover:text-primary px-4">Logout</button>
+          <Link href="/logistics/dashboard" className="text-gray-900 dark:text-gray-300 hover:text-primary px-4">Dashboard</Link>
+          <Link href="/logistics/billing" className="text-gray-900 dark:text-gray-300 hover:text-primary px-4">Billing</Link>
+          <Link href="/logistics/settings" className="text-gray-900 dark:text-gray-300 hover:text-primary px-4">Settings</Link>
+          <button onClick={async () => { await logout(); window.location.href = '/logistics/business/login'; }} className="text-gray-900 dark:text-gray-300 hover:text-primary px-4">Logout</button>
         </div>
       </nav>
     </header>

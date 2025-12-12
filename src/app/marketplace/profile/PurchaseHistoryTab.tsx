@@ -7,7 +7,7 @@ import { useUser } from "@/context/UserContext";
 import { useWallets } from "@privy-io/react-auth";
 import { OrderCard } from "@/components/orders/OrderCard";
 
-export const OrdersTab = () => {
+export const PurchaseHistoryTab = () => {
   const { userData, loading: isUserLoading } = useUser();
   const { wallets } = useWallets();
   const [ordersBuyer, setOrdersBuyer] = useState<Order[]>([]);
@@ -40,7 +40,7 @@ export const OrdersTab = () => {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">My Purchase Orders</h2>
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">My Purchase History</h2>
       {isUserLoading ? (
         <p>Loading orders...</p>
       ) : ordersBuyer.length > 0 ? (

@@ -6,7 +6,7 @@ import { getOrders } from "@/lib/ServerActions/orders";
 import { useUser } from "@/context/UserContext";
 import { OrderCard } from "@/components/orders/OrderCard";
 
-export const SalesTab = () => {
+export const SalesHistoryTab = () => {
   const { userData, loading: isUserLoading } = useUser();
   const [salesOrders, setSalesOrders] = useState<Order[]>([]);
 
@@ -21,7 +21,7 @@ export const SalesTab = () => {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">My Sales Orders</h2>
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">My Sales History</h2>
       {isUserLoading ? (
         <p>Loading sales...</p>
       ) : salesOrders.length > 0 ? (

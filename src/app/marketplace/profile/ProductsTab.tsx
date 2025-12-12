@@ -6,7 +6,7 @@ import { updateUser } from "@/lib/ServerActions/users";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-export const SellingTab = () => {
+export const ProductsTab = () => {
     const { userData, setUserData } = useUser();
     // Initialize the toggle state from userData but allow local changes
     const [isSellerToggle, setIsSellerToggle] = useState(userData.isSeller);

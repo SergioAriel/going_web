@@ -6,7 +6,7 @@ import { getUser, uploadUser } from "@/lib/ServerActions/users";
 import { User } from "@/interfaces";
 
 interface UserContextType {
-  userData: User;
+  userData: User | null;
   setUserData: Dispatch<SetStateAction<User | null>>;
   loading: boolean;
   handlerTheme: (theme: "dark" | "light" | "system") => void;
@@ -54,7 +54,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
                   currency: "USD",
                   language: "en",
                 },
-                wishlist: []
+                wishlist: [],
+                isLogisticsClient: false,
               };
               await uploadUser(newUser);
               setUserData(newUser);
@@ -76,6 +77,15 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
     fetchOrSetUser();
   }, [ready, authenticated, user]);
+
+  // Sync theme from user settings when userData is loaded
+  useEffect(() => {
+    if (userData?.settings?.theme) {
+      const savedTheme = userData.settings.theme as "light" | "dark" | "system";
+      console.log(`[UserContext] Applying saved user theme: ${savedTheme}`);
+      handlerTheme(savedTheme);
+    }
+  }, [userData]);
 
   // The theme logic can be simplified and should not run on server
   useEffect(() => {

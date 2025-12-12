@@ -46,56 +46,56 @@ const BusinessPage = () => {
       <main>
         {/* Hero Section */}
         <div className="relative isolate overflow-hidden bg-gray-900 py-24 sm:py-32">
+          <div
+            aria-hidden="true"
+            className="hidden sm:absolute sm:-top-10 sm:right-1/2 sm:-z-10 sm:mr-10 sm:block sm:transform-gpu sm:blur-3xl"
+          >
             <div
-                aria-hidden="true"
-                className="hidden sm:absolute sm:-top-10 sm:right-1/2 sm:-z-10 sm:mr-10 sm:block sm:transform-gpu sm:blur-3xl"
-            >
-                <div
-                className="aspect-[1097/845] w-[68.5625rem] bg-gradient-to-tr from-[#14BFFB] to-[#776fff] opacity-20"
-                style={{
-                    clipPath:
-                    'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)',
-                }}
-                />
-            </div>
+              className="aspect-[1097/845] w-[68.5625rem] bg-gradient-to-tr from-[#14BFFB] to-[#776fff] opacity-20"
+              style={{
+                clipPath:
+                  'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)',
+              }}
+            />
+          </div>
+          <div
+            aria-hidden="true"
+            className="absolute -top-52 left-1/2 -z-10 -translate-x-1/2 transform-gpu blur-3xl sm:top-[-28rem] sm:ml-16 sm:translate-x-0 sm:transform-gpu"
+          >
             <div
-                aria-hidden="true"
-                className="absolute -top-52 left-1/2 -z-10 -translate-x-1/2 transform-gpu blur-3xl sm:top-[-28rem] sm:ml-16 sm:translate-x-0 sm:transform-gpu"
-            >
-                <div
-                className="aspect-[1097/845] w-[68.5625rem] bg-gradient-to-tr from-[#14BFFB] to-[#776fff] opacity-20"
-                style={{
-                    clipPath:
-                    'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)',
-                }}
-                />
+              className="aspect-[1097/845] w-[68.5625rem] bg-gradient-to-tr from-[#14BFFB] to-[#776fff] opacity-20"
+              style={{
+                clipPath:
+                  'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)',
+              }}
+            />
+          </div>
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+            <div className="mx-auto max-w-2xl lg:mx-0">
+              <h2 className="text-4xl font-bold tracking-tight text-white sm:text-6xl">Power your business with the GOING Network</h2>
+              <p className="mt-6 text-lg leading-8 text-gray-300">
+                Focus on what you do best: creating great products. Let us handle the complexity of same-day delivery.
+                Integrate with our network and offer your customers a premium, fast, and reliable shipping experience.
+              </p>
             </div>
-            <div className="mx-auto max-w-7xl px-6 lg:px-8">
-                <div className="mx-auto max-w-2xl lg:mx-0">
-                    <h2 className="text-4xl font-bold tracking-tight text-white sm:text-6xl">Power your business with the GOING Network</h2>
-                    <p className="mt-6 text-lg leading-8 text-gray-300">
-                        Focus on what you do best: creating great products. Let us handle the complexity of same-day delivery.
-                        Integrate with our network and offer your customers a premium, fast, and reliable shipping experience.
-                    </p>
-                </div>
-                <div className="mx-auto mt-16 max-w-2xl lg:mx-0 lg:max-w-none">
-                    <div className="grid grid-cols-1 gap-x-8 gap-y-6 text-base font-semibold leading-7 text-white sm:grid-cols-2 md:flex lg:gap-x-10">
-                        <HeroButton />
-                    </div>
-                </div>
+            <div className="mx-auto mt-16 max-w-2xl lg:mx-0 lg:max-w-none">
+              <div className="grid grid-cols-1 gap-x-8 gap-y-6 text-base font-semibold leading-7 text-white sm:grid-cols-2 md:flex lg:gap-x-10">
+                <HeroButton />
+              </div>
             </div>
+          </div>
         </div>
 
         {/* Features Section */}
         <div className="bg-white dark:bg-gray-900 py-24 sm:py-32">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="mx-auto max-w-2xl lg:text-center">
-              <h2 className="text-base font-semibold leading-7 text-primary">Ship Smarter</h2>
+              <h2 className="text-base font-semibold leading-7 text-primary">Deploy faster</h2>
               <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
-                Everything you need to deliver, nothing you don’t
+                Everything you need to scale your logistics
               </p>
               <p className="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-400">
-                From manual shipment creation in our portal to a full API integration, our platform scales with your business needs.
+                Our platform provides the tools and infrastructure to streamline your delivery operations.
               </p>
             </div>
             <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-4xl">
