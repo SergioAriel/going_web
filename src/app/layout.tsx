@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+// import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
 import client from "@/lib/mongodb";
@@ -8,15 +8,13 @@ import { SocketProvider } from "@/context/SocketContext";
 import ConsoleSuppressor from "@/components/ConsoleSuppressor";
 
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+const geistSans = {
+  variable: "font-sans",
+};
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const geistMono = {
+  variable: "font-mono",
+};
 
 export const metadata: Metadata = {
   title: "GOING",
