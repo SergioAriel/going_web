@@ -1,21 +1,20 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+// import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
+import "leaflet/dist/leaflet.css";
 import client from "@/lib/mongodb";
-import { AppProviders } from "@/components/layout/AppProvider";
+import { GlobalProviders } from '@/providers/GlobalProviders';
+import { SocketProvider } from "@/context/SocketContext";
+import ConsoleSuppressor from "@/components/ConsoleSuppressor";
 
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+const geistSans = {
+  variable: "font-sans",
+};
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const geistMono = {
+  variable: "font-mono",
+};
 
 export const metadata: Metadata = {
   title: "GOING",
@@ -30,20 +29,27 @@ export const metadata: Metadata = {
     siteName: 'GOING',
     images: [
       {
-        url: 'https://going-taupe.vercel.app/logo.png', // Must be an absolute URL
+        url: 'https://going-taupe.vercel.app/logo.png',
         width: 800,
         height: 600,
+        alt: 'GOING Logo'
       }
     ],
-
-    locale: 'en_US',
+    locale: 'es_ES',
     type: 'website',
   },
-    twitter: {
+  twitter: {
     card: "summary",
     title: "GOING — The Decentralized Marketplace",
     description: "Experience the future of commerce with GOING. Try the live demo now.",
-    images: ["https://going-taupe.vercel.app/logo.png"],
+    images: [{
+      url: "https://going-taupe.vercel.app/logo.png",
+      width: 800,
+      height: 600,
+      alt: 'GOING Logo'
+    }],
+    site: "@GOING",
+    creator: "@GOING"
   }
 };
 
@@ -62,13 +68,12 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
-        <AppProviders>
-          <Header />
-          <main className="flex-grow">
+        <ConsoleSuppressor />
+        <GlobalProviders>
+          <SocketProvider>
             {children}
-          </main>
-          <Footer />
-        </AppProviders>
+          </SocketProvider>
+        </GlobalProviders>
       </body>
     </html >
   );

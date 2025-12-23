@@ -1,8 +1,9 @@
-import { User } from '@/interfaces';
+import { User, Address, ShippingType } from '@/interfaces';
 import client from '@/lib/mongodb';
-import { getProducts } from '@/lib/ServerActions/products';
+import { getOneProduct, getProducts } from '@/lib/ServerActions/products';
 import { v2 as cloudinary } from "cloudinary";
 import { NextRequest, NextResponse } from 'next/server';
+
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -10,15 +11,42 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export const GET = async (_: Request) => {
+
+export async function GET(request: Request) {
+    // const requestHeaders = await headers();
+    // const authorizationHeader = requestHeaders.get('authorization');
+
+    // if (!authorizationHeader || !authorizationHeader.startsWith('Bearer ')) {
+    //     return NextResponse.json({ message: 'Unauthorized - Malformed Authorization header' }, { status: 401 });
+    // }
+
+    // const idToken = authorizationHeader.split(' ')[1];
+
+    // const identityToken = await verifyIdentityToken(idToken);
+
+    // if (!identityToken) return NextResponse.json({ error: "Failed to upload images" }, { status: 500 });
+
     try {
-        const products = await getProducts()
+
+        const { searchParams } = new URL(request.url);
+        const _id = searchParams.get('_id');
+        const find = searchParams.get('find');
+        const sort = searchParams.get('sort');
+
+        if (_id) {
+            const product = await getOneProduct(_id);
+            return NextResponse.json({ result: product }, { status: 200 });
+        }
+
+        const products = await getProducts(find ? JSON.parse(find) : {}, sort ? JSON.parse(sort) : {});
+        console.log(products, sort, find)
         return NextResponse.json({ results: products }, { status: 200 });
     } catch (error) {
-        console.error("Error fetching movies:", error);
+        console.log("Failed to fetch:", error)
         return NextResponse.json({ status: 500, error: "Failed to fetch movies" });
     }
 }
+
 
 export const POST = async (request: NextRequest): Promise<NextResponse> => {
     const data = await request.formData();
@@ -26,14 +54,14 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
     const images = file.map((entry) => entry instanceof File ? entry : null).filter((entry): entry is File => entry !== null)
 
     const uploadPromises = Array.from(images).map((image): Promise<string> => {
-        return new Promise(async (resolve, reject)  => {
+        return new Promise(async (resolve, reject) => {
             const bytes = await image.arrayBuffer();
             const buffer = Buffer.from(bytes);
             cloudinary.uploader.upload_stream({}, async (error, result) => {
                 if (error) {
                     console.error("Error uploading image to Cloudinary:", error);
                     reject(error);
-                }    
+                }
                 if (result) {
                     console.log("Image uploaded to Cloudinary:", result);
                     resolve(result.secure_url);
@@ -43,10 +71,13 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
     });
     const imageUrls = await Promise.all(uploadPromises).catch(() => false);
 
-    if(!imageUrls) {
+    if (!imageUrls) {
         console.error("Failed to upload images to Cloudinary");
         return NextResponse.json({ error: "Failed to upload images" }, { status: 500 });
     }
+
+    const pickupAddressString = data.get("pickupAddress") as string;
+    const pickupAddress: Omit<Address, 'name'> = JSON.parse(pickupAddressString);
 
     const productDb = {
         seller: data.get("seller") as string,
@@ -58,20 +89,25 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
         stock: data.get("stock") ? parseInt(data.get("stock") as string) : 1,
         location: data.get("location") as string,
         condition: data.get("condition") as string,
+        shippingType: data.get("shippingType") as ShippingType,
+        weight_kg: data.get("weight_kg") ? parseFloat(data.get("weight_kg") as string) : 0,
+        width_cm: data.get("width_cm") ? parseFloat(data.get("width_cm") as string) : 0,
+        height_cm: data.get("height_cm") ? parseFloat(data.get("height_cm") as string) : 0,
+        depth_cm: data.get("depth_cm") ? parseFloat(data.get("depth_cm") as string) : 0,
+        isFragile: data.get("isFragile") === "true",
         images: Array.isArray(imageUrls) ? [...imageUrls.slice(1)] : [],
         tags: data.get("tags") as string,
         isService: data.get("isService") === "true",
         addressWallet: data.get("addressWallet") as string,
-        mainImage: Array.isArray(imageUrls) ? imageUrls[0] : ''
+        mainImage: Array.isArray(imageUrls) ? imageUrls[0] : '',
+        pickupAddress: pickupAddress,
+        publishStatus: data.get("publishStatus") as string
     };
 
     if (!file) {
         console.error("No file found in form data");
         return NextResponse.json({ error: "No file found" }, { status: 400 });
     }
-    // upload multiple images on cloudinary
-
-
 
     const db = client.db("going");
     const product = await db.collection("products").insertOne({
@@ -79,13 +115,10 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
         images: imageUrls,
     });
 
-    //udate user
-    
     await db.collection<User>("users").updateOne(
-        { _id: productDb.seller  },
-        { $push: { products: product.insertedId }}
+        { _id: productDb.seller },
+        { $push: { products: product.insertedId } }
     );
     console.log("Product added successfully:", product);
-    // Return the result
     return NextResponse.json({ result: {} }, { status: 200 });
 };

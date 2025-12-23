@@ -1,142 +1,95 @@
 
+import Link from 'next/link';
+import { BuildingStorefrontIcon, CubeTransparentIcon, GlobeAltIcon, TruckIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
+import CorporateHeader from '@/components/layoutCorporate/CorporateHeader';
+import CorporateFooter from '@/components/layoutCorporate/CorporateFooter';
 
-import ProductCard from "@/components/products/ProductCard";
-import HeroSlider from "@/components/layout/HeroSlider";
-import Link from "next/link";
-import { getProducts } from "@/lib/ServerActions/products";
 
 
-export default async function Home() {
-
-  const dbFeaturedProducts = await getProducts({ isFeatured: true })
-
+export default function CorporateLandingPage() {
   return (
-    <>
-      {/* Hero Section with Slider */}
-      <HeroSlider />
-      {/* Featured Products */}
-      <section className="py-12 bg-gray-50 dark:bg-gray-900">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-              Featured Products
-            </h2>
-            <Link
-              href="/products"
-              className="text-primary hover:text-primary-dark dark:text-primary-light dark:hover:text-primary transition-colors relative group"
-            >
-              <span>View All</span>
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-primary transition-all duration-300 group-hover:w-full"></span>
-            </Link>
-          </div>
+    <div className="bg-white dark:bg-gray-900">
+      <CorporateHeader />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {
-              dbFeaturedProducts?.map((product) => (
-                <ProductCard key={product._id.toString()} product={{ ...product, _id: product._id.toString() }} />
-              ))
-            }
+      {/* Hero Section */}
+      <section 
+        className="relative h-[60vh] flex items-center justify-center text-white bg-cover bg-center"
+        style={{ backgroundImage: "url('/going_hero.png')" }}
+      >
+        <div className="absolute inset-0 bg-black opacity-40"></div>
+        <div className="relative z-10 text-center px-6 sm:px-8">
+          <h1 className="text-4xl md:text-6xl font-extrabold mb-4">The Future is on <Image src="/goingLogo.png" alt="Going Ecosystem" width={250} height={150} className="inline-block" /></h1>
+          <p className="text-lg md:text-xl max-w-3xl mx-auto text-white/90">
+            CONNECTING THE WORLD. DELIVERING THE FUTURE
+          </p>
+          <p className="text-lg md:text-xl max-w-3xl mx-auto text-white/90">
+            ETHICAL AND EFFICIENT WEB3 LOGISTICS
+          </p>
+        </div>
+      </section>
+
+      {/* Products Section */}
+      <section className="py-20 lg:py-28">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            {/* Marketplace Card */}
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-8 text-center hover:shadow-xl transition-shadow duration-300">
+              <BuildingStorefrontIcon className="h-16 w-16 mx-auto text-primary mb-4" />
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">GOING Marketplace</h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Discover and shop from the best local stores in your city. A curated experience with ultra-fast delivery.
+              </p>
+              <Link href="/marketplace" className="btn-primary">
+                Enter Marketplace
+              </Link>
+            </div>
+
+            {/* Logistics Card */}
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-8 text-center hover:shadow-xl transition-shadow duration-300">
+              <TruckIcon className="h-16 w-16 mx-auto text-primary mb-4" />
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">GOING Logistics</h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Power your business with our same-day delivery network. Manage shipments, reduce costs, and delight your customers.
+              </p>
+              <Link href="/logistics" className="btn-secondary">
+                For Businesses
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Banner Section */}
-      <section className="py-16 bg-gradient-brand text-white relative overflow-hidden">
-        {/* Decorative elements inspired by the logo */}
-        <div className="absolute top-0 left-0 w-full h-full dot-pattern opacity-10"></div>
-        <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-white/10 blur-3xl"></div>
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-white/5 blur-3xl"></div>
-
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">Shop with Cryptocurrency</h2>
-            <p className="text-lg md:text-xl mb-8 text-white/90">
-              Experience the future of online shopping with our Solana integration.
-              Fast, secure, and eco-friendly transactions for the modern shopper.
+      {/* Core Benefits Section */}
+      <section className="py-20 lg:py-28 bg-gray-100 dark:bg-gray-800">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">A Smarter Way to Move Goods</h2>
+            <p className="text-gray-600 dark:text-gray-400 mt-4">
+              Our ecosystem is built on principles of efficiency, transparency, and local empowerment.
             </p>
-            <div className="flex justify-center">
-              <a href="/crypto-guide" className="btn-white">
-                Learn How It Works
-              </a>
-            </div>
           </div>
-        </div>
-      </section>
-      {/* Features Section */}
-      <section className="py-16 bg-gray-50 dark:bg-gray-900">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-center text-gray-900 dark:text-white mb-12">
-            Why Choose Going Marketplace
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-primary rounded-full flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">Secure Transactions</h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                All transactions are encrypted and secure, whether using traditional payment methods or cryptocurrency.
-              </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+            <div className="p-6">
+              <GlobeAltIcon className="h-12 w-12 mx-auto text-primary mb-4" />
+              <h3 className="text-xl font-semibold mb-2 text-white">Local Focus</h3>
+              <p className="text-gray-600 dark:text-gray-400">We strengthen local economies by connecting neighborhood businesses with their customers.</p>
             </div>
-
-            {/* Feature 2 */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-secondary rounded-full flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">Fast Delivery</h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Quick processing and shipping to get your products to you as soon as possible.
-              </p>
+            <div className="p-6">
+              <CubeTransparentIcon className="h-12 w-12 mx-auto text-primary mb-4" />
+              <h3 className="text-xl font-semibold mb-2 text-white">Transparent & Efficient</h3>
+              <p className="text-gray-600 dark:text-gray-400">Advanced algorithms optimize routes and batches, reducing costs and delivery times for everyone.</p>
             </div>
-
-            {/* Feature 3 */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-brand rounded-full flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">Multiple Payment Options</h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Choose from credit cards, digital wallets, or cryptocurrencies like Solana for your purchases.
-              </p>
+            <div className="p-6">
+              <TruckIcon className="h-12 w-12 mx-auto text-primary mb-4" />
+              <h3 className="text-xl font-semibold mb-2 text-white">Decentralized Network</h3>
+              <p className="text-gray-600 dark:text-gray-400">Our model empowers a network of independent drivers, creating flexible opportunities.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Newsletter Section */}
-      {/* <section className="py-16 bg-gradient-to-r from-primary to-secondary text-white">
-        <div className="container mx-auto px-4">
-          <div className="max-w-2xl mx-auto text-center">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">Stay Updated</h2>
-            <p className="text-lg mb-8">
-              Subscribe to our newsletter to receive updates on new products, special offers, and more.
-            </p>
-            <form className="flex flex-col sm:flex-row gap-4 justify-center">
-              <input
-                type="email"
-                placeholder="Your email address"
-                className="px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50 bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder-white/60 flex-grow max-w-md"
-                required
-              />
-              <button
-                type="submit"
-                className="btn-white"
-              >
-                Subscribe
-              </button>
-            </form>
-          </div>
-        </div>
-      </section> */}
-    </>
+      <CorporateFooter />
+    </div>
   );
 }

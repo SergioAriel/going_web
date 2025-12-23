@@ -1,27 +1,25 @@
 'use server'
 
-import { Product } from "@/interfaces";
+import { Product, ProductInDb } from "@/interfaces";
 import client from "../mongodb";
 import { ObjectId, SortDirection } from "mongodb";
 
-export const getOneProduct = async (_id: string ): Promise<Product> => {
+export const getOneProduct = async (_id: string) => {
     const db = client.db("going");
-    return (await db
-        .collection<Product>("products")
-        .find({ _id: new ObjectId(_id) })
-        .sort({ metacritic: -1 })
-        .limit(10)
-        .toArray()
-    ).map((product) => ({ ...product, _id: product._id.toString() }))[0]
+    const product = await db
+        .collection<ProductInDb>("products")
+        .findOne({ _id: new ObjectId(_id) });
+    if (!product) throw new Error("Product not found");
+    return { ...product, _id: product._id.toString() } as Product;
 }
 
 export const getProducts = async (find = {}, sort: { [key: string]: SortDirection } = { metacritic: -1 }) => {
     const db = client.db("going");
-    return (await db
-        .collection<Product>("products")
+    const products = await db
+        .collection<ProductInDb>("products")
         .find(find)
         .sort(sort)
         .limit(10)
-        .toArray()).map((product) => ({ ...product, _id: product._id.toString() })
-        )
+        .toArray();
+    return products.map(product => ({ ...product, _id: product._id.toString() })) as Product[];
 }

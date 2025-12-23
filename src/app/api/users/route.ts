@@ -1,5 +1,6 @@
 import { User } from "@/interfaces";
 import client from "@/lib/mongodb";
+import { getUser } from "@/lib/ServerActions/users";
 import { v2 as cloudinary } from "cloudinary";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -37,3 +38,14 @@ export const PUT = async (request: Request) => {
     console.log("User updated in database:", updatedUser);
     return NextResponse.json({ message: "User updated successfully" }, { status: 200 });
 }
+
+export async function GET(request: Request) {
+    const { searchParams } = new URL(request.url);
+    const _id = searchParams.get('_id');
+    if (_id) {
+        const user = await getUser(_id);
+        return NextResponse.json(user);
+    }
+    return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+}
+

@@ -1,5 +1,33 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Cambay';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/fonts/Cambay-Regular.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Cambay';
+  font-style: italic;
+  font-weight: 400;
+  src: url('/fonts/Cambay-Italic.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Cambay';
+  font-style: normal;
+  font-weight: 700;
+  src: url('/fonts/Cambay-Bold.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Cambay';
+  font-style: italic;
+  font-weight: 700;
+  src: url('/fonts/Cambay-BoldItalic.ttf') format('truetype');
+}
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
@@ -50,7 +78,7 @@
   --gradient-primary: var(--gradient-primary);
   --gradient-secondary: var(--gradient-secondary);
   --gradient-brand: var(--gradient-brand);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: 'Cambay', var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
