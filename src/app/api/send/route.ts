@@ -1,12 +1,19 @@
 import { ConfirmationEmail } from '../../../../emails/confirmation';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const getResendClient = () => {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY is missing");
+  }
+  return new Resend(apiKey);
+};
 
 export async function POST(request: Request) {
   const { name, email, confirmationLink } = await request.json();
 
   try {
+    const resend = getResendClient();
     const data = await resend.emails.send({
       from: 'Going <onboarding@resend.dev>',
       to: [email],
@@ -15,7 +22,8 @@ export async function POST(request: Request) {
     });
 
     return Response.json(data);
-  } catch (error) {
-    return Response.json({ error });
+  } catch (error: any) {
+    console.error("Error sending email:", error);
+    return Response.json({ error: error.message || error }, { status: 500 });
   }
 }
