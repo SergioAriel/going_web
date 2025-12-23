@@ -24,10 +24,12 @@ import { Address, CartItem, NewOrderPayload } from "@/interfaces";
 import { getOneProduct, getProducts } from "@/lib/ServerActions/products";
 import { CheckoutComplete } from "@/lib/ServerActions/checkout";
 import { useCurrencies } from "@/context/CurrenciesContext";
+import { useUser } from "@/context/UserContext";
 
 const Checkout = () => {
   const router = useRouter();
   const { user } = usePrivy();
+  const { userData } = useUser();
   const { items: cartItems, clearCart } = useCart();
   const { wallets } = useSolanaWallets();
   const { } = useWallets();
@@ -35,15 +37,15 @@ const Checkout = () => {
   const [step, setStep] = useState(1);
   const [selectedPayment, setSelectedPayment] = useState("");
   const [address, setAddress] = useState<Address>({
-    name: "",
+    fullName: "",
     street: "",
     city: "",
     state: "",
     zipCode: "",
     country: "",
     phone: "",
-    email: "",
   });
+  const [email, setEmail] = useState("");
   const { userCurrency, listCryptoCurrencies } = useCurrencies()
   const [totalPrice, setTotalPrice] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -125,7 +127,11 @@ const Checkout = () => {
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setAddress(prev => ({ ...prev, [name]: value }));
+    if (name === "email") {
+      setEmail(value);
+    } else {
+      setAddress(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handlePaymentSelect = (methodId: string) => {
@@ -133,7 +139,7 @@ const Checkout = () => {
   };
 
   const isAddressComplete = () => {
-    return Object.values(address).every(value => value.trim() !== "");
+    return Object.values(address).every(value => value !== undefined && value.toString().trim() !== "") && email.trim() !== "";
   };
 
   const handleSubmitAddress = (e: React.FormEvent<HTMLFormElement>) => {
@@ -157,7 +163,7 @@ const Checkout = () => {
     setLoading(true);
     setPaymentStage("confirmed")
     try {
-      await CheckoutComplete({ orderId, signature, items: checkoutItems, buyer: { walletAddress: selectedPayment, _id: user.id, address } });
+      await CheckoutComplete({ orderId, signature, items: checkoutItems, buyer: { walletAddress: selectedPayment, _id: user.id, address, email, phone: address.phone || "" } });
       setOrderNumber(orderId);
       clearCart();
       setOrderCompleted(true);
@@ -196,7 +202,9 @@ const Checkout = () => {
         buyer: {
           walletAddress: wallet.address,
           _id: userData?._id as string,
-          address
+          address,
+          email,
+          phone: address.phone || ""
         },
         status: "payment_pending",
         date: new Date(),
@@ -291,7 +299,7 @@ const Checkout = () => {
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Shipping Details</h3>
               <p className="text-gray-600 dark:text-gray-400">
-                We will send a confirmation to <span className="font-medium">{address.name}</span> at{" "}
+                We will send a confirmation to <span className="font-medium">{address.fullName}</span> at{" "}
                 <span className="font-medium">{address.street}, {address.city}</span>
               </p>
               <p className="text-gray-600 dark:text-gray-400 mt-2">
@@ -381,10 +389,10 @@ const Checkout = () => {
                           </label>
                           <input
                             id="Name"
-                            name="name"
+                            name="fullName"
                             type="text"
                             required
-                            value={address.name}
+                            value={address.fullName}
                             onChange={handleAddressChange}
                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
                           />
@@ -488,7 +496,7 @@ const Checkout = () => {
                             name="email"
                             type="email"
                             required
-                            value={address.email}
+                            value={email}
                             onChange={handleAddressChange}
                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
                           />
@@ -687,7 +695,7 @@ const Checkout = () => {
                   </div>
 
                   <div className="p-6">
-                    <p className="text-gray-900 dark:text-white font-medium">{address.name}</p>
+                    <p className="text-gray-900 dark:text-white font-medium">{address.fullName}</p>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">{address.street}</p>
                     <p className="text-gray-600 dark:text-gray-400">
                       {address.city}, {address.state} {address.zipCode}

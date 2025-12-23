@@ -287,7 +287,7 @@ export const updateShipment = async (_id: string, shipmentData: Partial<Omit<Shi
     }
 
     const resultUpdate = await db.collection<ShipmentInDb>("shipments").findOneAndUpdate(
-        { _id: new ObjectId(_id) },
+        { _id: new ObjectId(_id) as any },
         { $set: dataToSet },
         { returnDocument: 'after' }
     );

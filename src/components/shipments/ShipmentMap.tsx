@@ -8,7 +8,7 @@ import { useEffect } from 'react';
 // This is a common workaround for a known issue with react-leaflet and webpack.
 // It manually re-imports the default icon assets.
 import L from 'leaflet';
-delete L.Icon.Default.prototype._getIconUrl;
+delete (L.Icon.Default.prototype as any)._getIconUrl;
 
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -33,9 +33,11 @@ const ShipmentMap = ({ pickupCoords, deliveryCoords, pickupAddress, deliveryAddr
   const polylineToShow = route && route.length > 0 ? route : straightLine;
 
   // Calculate the center point between the two coordinates to center the map
+  const pickupLatLng = L.latLng(pickupCoords);
+  const deliveryLatLng = L.latLng(deliveryCoords);
   const center: LatLngExpression = [
-    (pickupCoords[0] + deliveryCoords[0]) / 2,
-    (pickupCoords[1] + deliveryCoords[1]) / 2,
+    (pickupLatLng.lat + deliveryLatLng.lat) / 2,
+    (pickupLatLng.lng + deliveryLatLng.lng) / 2,
   ];
 
   return (

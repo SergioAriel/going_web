@@ -1,5 +1,5 @@
 import Link from "next/link";
-import ProductDetail from "@/app/products/[_id]";
+import ProductDetail from "./index";
 import { getOneProduct } from "@/lib/ServerActions/products";
 import { getUser } from "@/lib/ServerActions/users";
 

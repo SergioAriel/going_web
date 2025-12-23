@@ -251,6 +251,12 @@ export type NewOrderPayload = Omit<Order, '_id' | 'shipments' | 'signature'>;
 
 export type Coordinate = { lat: number; lon: number };
 
+export interface Currency {
+  symbol: string;
+  price: number;
+  name?: string;
+}
+
 export interface Vehicle {
   type: 'motorcycle' | 'car' | 'van';
   max_payload_kg: number;

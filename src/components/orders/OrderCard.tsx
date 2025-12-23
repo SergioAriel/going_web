@@ -18,14 +18,12 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, isBuyer, isSeller }
         <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 flex flex-col sm:flex-row sm:justify-between sm:items-center">
           <div className="flex-grow">
             <div className="flex items-center flex-wrap">
-              <span className="text-gray-900 dark:text-white font-medium mr-2">Order {order._id.toString()}</span>
+              <span className="text-gray-900 dark:text-white font-medium mr-2">Order {order._id?.toString()}</span>
               <span className="mx-2 text-gray-500 dark:text-gray-400 hidden sm:inline">•</span>
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-2 sm:mt-0
                 ${order.status === "completed"
                   ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                  : order.status === "in_transit"
-                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-                    : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
                 }`}
               >
                 {order.status}

@@ -12,7 +12,8 @@ interface Coordinate {
  */
 export async function getOsrmDistance(origin: Coordinate, destination: Coordinate): Promise<number> {
     const coordsString = `${origin.lon},${origin.lat};${destination.lon},${destination.lat}`;
-    const osrmUrl = `http://router.project-osrm.org/route/v1/driving/${coordsString}?overview=false`;
+    const baseUrl = process.env.OSRM_URL || 'http://localhost:5001';
+    const osrmUrl = `${baseUrl}/route/v1/driving/${coordsString}?overview=false`;
 
     const MAX_RETRIES = 3;
     const DELAY_MS = 1000; // 1 second delay between retries

@@ -5,7 +5,7 @@ import { io, Socket } from 'socket.io-client';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import L, { LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Shipment } from '@/interfaces';
+import { Shipment, GoingNetworkShipment } from '@/interfaces';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 // Fix Leaflet Icon issue
@@ -34,6 +34,11 @@ export default function TrackingModal({ shipment, onClose }: TrackingModalProps)
     const [driverLocation, setDriverLocation] = useState<LatLngExpression | null>(null);
     const [driverStatus, setDriverStatus] = useState<string>('Connecting...');
 
+    // Extract driverId if it exists (only for Going Network shipments)
+    const driverId = shipment.shippingType === 'going_network'
+        ? (shipment as GoingNetworkShipment).deliveryDetails?.driverId
+        : undefined;
+
     // Initialize Socket
     useEffect(() => {
         // Connect to Socket Server (Port 4000)
@@ -61,13 +66,13 @@ export default function TrackingModal({ shipment, onClose }: TrackingModalProps)
             // For this step, I will implement the client-side logic assuming the event exists,
             // and then I will update the Engine to support it.
 
-            if (shipment.assignedDriverId) {
-                newSocket.emit('track_driver', { driverId: shipment.assignedDriverId });
+            if (driverId) {
+                newSocket.emit('track_driver', { driverId });
             }
         });
 
         newSocket.on('driver_location_changed', (data: { lat: number, lon: number, driverId: string }) => {
-            if (data.driverId === shipment.assignedDriverId) {
+            if (data.driverId === driverId) {
                 setDriverLocation([data.lat, data.lon]);
                 setDriverStatus('Driver moving...');
             }
@@ -78,7 +83,7 @@ export default function TrackingModal({ shipment, onClose }: TrackingModalProps)
         return () => {
             newSocket.disconnect();
         };
-    }, [shipment.assignedDriverId]);
+    }, [driverId]);
 
     const pickupCoords: LatLngExpression = [shipment.pickupAddress.lat, shipment.pickupAddress.lon];
     const deliveryCoords: LatLngExpression = [shipment.deliveryAddress.lat, shipment.deliveryAddress.lon];

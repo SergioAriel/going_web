@@ -1,6 +1,6 @@
 'use server';
 
-import { Order, NewOrderPayload } from "@/interfaces";
+import { Order, NewOrderPayload, CartItem } from "@/interfaces";
 import client from "../mongodb";
 import { ObjectId } from "mongodb";
 // import { decryptObject, encryptObject } from "../encryption";
@@ -68,12 +68,12 @@ export const getOrders = async (find = {}): Promise<Order[]> => {
     const ordersInDb = await db.collection("orders").find(find).toArray();
 
     // Convert complex MongoDB objects to plain objects for Client Components
-    const plainOrders = ordersInDb.map(order => ({
+    const plainOrders = ordersInDb.map((order: any) => ({
         ...order,
         _id: order._id.toString(),
         date: new Date(order.date).toISOString(),
         // Also map over items if they contain ObjectIds or other complex types
-        items: order.items.map(item => ({
+        items: order.items.map((item: CartItem) => ({
             ...item,
             _id: item._id.toString(), // Assuming item._id is also an ObjectId
         }))

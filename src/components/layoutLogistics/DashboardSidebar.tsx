@@ -11,7 +11,13 @@ import {
 } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 
-const SidebarLink = ({ href, icon: Icon, children }) => (
+interface SidebarLinkProps {
+  href: string;
+  icon: React.ComponentType<React.ComponentProps<'svg'>>;
+  children: React.ReactNode;
+}
+
+const SidebarLink = ({ href, icon: Icon, children }: SidebarLinkProps) => (
   <Link href={href} className="flex items-center p-2 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700 group">
     <Icon className="w-6 h-6 text-gray-400 transition duration-75 group-hover:text-white" />
     <span className="ml-3">{children}</span>

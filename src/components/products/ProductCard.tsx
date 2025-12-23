@@ -6,7 +6,7 @@ import Link from "next/link";
 import { HeartIcon as HeartSolidIcon } from "@heroicons/react/24/solid";
 // import { HeartIcon as HeartSolidIcon, PlusIcon, StarIcon as StarSolidIcon } from "@heroicons/react/24/outline";
 import { useCart } from "@/context/CartContext";
-import { Product } from "@/interfaces";
+import { Product, User } from "@/interfaces";
 import { useCurrencies } from "@/context/CurrenciesContext";
 import { Tooltip } from "@material-tailwind/react";
 import { InformationCircleIcon, StarIcon, ShoppingCartIcon, ShoppingBagIcon, HeartIcon, PlusIcon, StarIcon as StarSolidIcon } from "@heroicons/react/24/outline";
@@ -27,21 +27,24 @@ const ProductCard = ({ product }: { product: Product }) => {
 
   const toggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
-    if(!userData) return handleAlert({
+    if (!userData) return handleAlert({
       isError: true,
       message: "Please log in to add products to your wishlist."
     });
-    if(!userData.wishlist.includes(product._id.toString())) {
+    if (!userData.wishlist.includes(product._id.toString())) {
       const updateWishList = await updateUser(userData._id.toString(), {
         wishlist: [...userData.wishlist, product._id.toString()],
       })
       if (updateWishList.status) {
         console.log("wishlist updates")
-        setUserData((prevData) => ({
-          ...prevData,
-          wishlist: [...prevData.wishlist, product._id.toString()],
-        }));
-      }else {
+        setUserData((prevData) => {
+          if (!prevData) return null;
+          return {
+            ...prevData,
+            wishlist: [...prevData.wishlist, product._id.toString()],
+          } as User;
+        });
+      } else {
         console.error("Error updating wishlist:", updateWishList.message);
       }
     } else {
@@ -49,16 +52,19 @@ const ProductCard = ({ product }: { product: Product }) => {
         wishlist: removeFromWishlist(product),
       })
       if (updateWishList.status) {
-        setUserData((prevData) => ({
-          ...prevData,
-          wishlist: removeFromWishlist(product),
-        }));
+        setUserData((prevData) => {
+          if (!prevData) return null;
+          return {
+            ...prevData,
+            wishlist: removeFromWishlist(product),
+          } as User;
+        });
       }
     }
   };
 
   const removeFromWishlist = (product: Product) => {
-    return userData.wishlist.filter(item => item !== product._id.toString());
+    return userData?.wishlist.filter(item => item !== product._id.toString()) || [];
   };
 
   const handleAddToCart = (e: React.MouseEvent<HTMLElement>) => {

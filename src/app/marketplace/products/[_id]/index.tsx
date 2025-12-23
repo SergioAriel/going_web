@@ -82,22 +82,25 @@ const ProductDetail = ({ product, seller }: { product: Product, seller?: User | 
 
   const toggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
-    if (userData._id === "") return handleAlert({
+    if (!userData || userData._id === "") return handleAlert({
       isError: true,
       message: "Please log in to add products to your wishlist."
     });
     if (!userData.wishlist.includes(product._id?.toString() as string)) {
       const updateWishList = await updateUser(userData._id.toString(),
         {
-          
+
           wishlist: [...userData.wishlist, product._id?.toString() as string],
         })
       if (updateWishList.status) {
         console.log("wishlist updates")
-        setUserData((prevData) => ({
-          ...prevData,
-          wishlist: [...prevData.wishlist, product._id?.toString() as string],
-        }));
+        setUserData((prevData) => {
+          if (!prevData) return null;
+          return {
+            ...prevData,
+            wishlist: [...prevData.wishlist, product._id?.toString() as string],
+          } as User;
+        });
       } else {
         console.error("Error updating wishlist:", updateWishList.message);
       }
@@ -106,16 +109,19 @@ const ProductDetail = ({ product, seller }: { product: Product, seller?: User | 
         wishlist: removeFromWishlist(product),
       })
       if (updateWishList.status) {
-        setUserData((prevData) => ({
-          ...prevData,
-          wishlist: removeFromWishlist(product),
-        }));
+        setUserData((prevData) => {
+          if (!prevData) return null;
+          return {
+            ...prevData,
+            wishlist: removeFromWishlist(product),
+          } as User;
+        });
       }
     }
   };
 
   const removeFromWishlist = (product: Product) => {
-    return userData.wishlist.filter(item => item !== product._id?.toString());
+    return userData?.wishlist.filter(item => item !== product._id?.toString()) || [];
   };
 
   return (
@@ -189,7 +195,7 @@ const ProductDetail = ({ product, seller }: { product: Product, seller?: User | 
               onClick={toggleWishlist}
               className="absolute top-3 right-3 p-2 bg-white/80 dark:bg-gray-800/80 rounded-full shadow hover:bg-white dark:hover:bg-gray-700 z-10"
             >
-              {userData.wishlist.includes(product._id?.toString() as string) ? (
+              {userData?.wishlist?.includes(product._id?.toString() as string) ? (
                 <HeartSolidIcon className="h-4 w-4 text-[#D300E5]" />
               ) : (
                 <HeartIcon className="h-4 w-4 text-gray-600 dark:text-gray-400" />

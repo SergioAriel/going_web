@@ -22,7 +22,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         const token = authorizationHeader.split(' ')[1];
         try {
             const verifiedToken = await verifyIdentityToken(token);
-            requestingUserId = verifiedToken.sub; // 'sub' usually holds the user ID (Privy DID)
+            requestingUserId = verifiedToken.userId; // 'userId' holds the Privy DID
         } catch (_error) {
             // Token is invalid or expired, treat as a public request
             console.log("Invalid token received for a profile view, proceeding as public.");

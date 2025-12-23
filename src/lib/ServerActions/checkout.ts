@@ -9,6 +9,8 @@ type Buyer = {
   walletAddress: string;
   _id?: string;
   address: Address;
+  email: string;
+  phone: string;
 };
 
 interface CheckoutPayload {

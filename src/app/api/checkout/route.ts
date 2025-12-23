@@ -3,9 +3,11 @@ import { CheckoutComplete } from '@/lib/ServerActions/checkout';
 import { CartItem, Address } from '@/interfaces';
 
 type Buyer = {
-    walletAddress: string;
-    _id?: string;
-    address: Address;
+  walletAddress: string;
+  _id?: string;
+  address: Address;
+  email: string;
+  phone: string;
 };
 
 // Define the expected structure of the incoming request body

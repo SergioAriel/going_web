@@ -9,13 +9,13 @@ import { useEffect, useState } from "react";
 export const ProductsTab = () => {
     const { userData, setUserData } = useUser();
     // Initialize the toggle state from userData but allow local changes
-    const [isSellerToggle, setIsSellerToggle] = useState(userData.isSeller);
+    const [isSellerToggle, setIsSellerToggle] = useState(userData?.isSeller ?? false);
     const [userProducts, setUserProducts] = useState<Product[] | null>(null);
     const { handleAlert } = useAlert();
 
     useEffect(() => {
         // Fetch products only if the user is a confirmed seller
-        if (userData.isSeller) {
+        if (userData?.isSeller && userData?._id) {
             getProducts({ seller: userData._id as string })
                 .then(products => {
                     if (products) {
@@ -33,7 +33,7 @@ export const ProductsTab = () => {
                     });
                 });
         }
-    }, [userData.isSeller, userData._id, handleAlert]);
+    }, [userData?.isSeller, userData?._id, handleAlert]);
 
     const handleBecomeSeller = async () => {
         // We only want to set isSeller to true
@@ -42,10 +42,18 @@ export const ProductsTab = () => {
             return;
         }
 
-        const resp = await updateUser({ ...userData, isSeller: true });
+        if (!userData?._id) {
+            handleAlert({ message: "User not found.", isError: true });
+            return;
+        }
+
+        const resp = await updateUser(userData._id, { isSeller: true });
 
         if (resp.status) {
-            setUserData({ ...userData, isSeller: true });
+            setUserData((prev) => {
+                if (!prev) return null;
+                return { ...prev, isSeller: true } as any;
+            });
             handleAlert({ message: "Congratulations! You are now a seller.", isError: false });
         } else {
             handleAlert({ message: resp.message || "An error occurred.", isError: true });
@@ -55,7 +63,7 @@ export const ProductsTab = () => {
     // --- Render Logic ---
 
     // 1. User is already a seller -> Show product list
-    if (userData.isSeller) {
+    if (userData?.isSeller) {
         return (
             <div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">My Products</h2>
@@ -96,7 +104,7 @@ export const ProductsTab = () => {
     }
 
     // 2. User is NOT a seller and has NO address -> Prompt to add address
-    if (!userData.addresses || userData.addresses.length === 0) {
+    if (!userData?.addresses || userData.addresses.length === 0) {
         return (
             <div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Become a Seller</h2>
@@ -117,7 +125,7 @@ export const ProductsTab = () => {
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Become a Seller</h2>
             <div className="flex flex-col w-full gap-6 bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
                 <p className="text-gray-700 dark:text-gray-300">To start selling your products on our platform, please review our terms and conditions and confirm your intention to become a seller.</p>
-                
+
                 {/* This section can be expanded with KYC information or other requirements in the future */}
                 <p className="font-bold text-center text-gray-600 dark:text-gray-400">KYC Process Coming Soon</p>
 

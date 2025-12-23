@@ -12,7 +12,7 @@ import QrScanner from "@/components/orders/QrScanner";
 import { useAlert } from "@/context/AlertContext";
 
 const statusOrder: Record<string, number> = {
-    'pending': 1, 'ready_to_ship': 2, 'in_transit': 3, 'shipped_by_seller': 4, 
+    'pending': 1, 'ready_to_ship': 2, 'in_transit': 3, 'shipped_by_seller': 4,
     'shipped': 5, 'delivered': 6, 'completed': 7, 'cancelled': 8,
 };
 
@@ -60,12 +60,12 @@ const OrderDetailPage = () => {
 
             // 1. Determinar el estado correcto para la llamada a la API
             const newStatusForDb = shipmentToUpdate.shippingType === 'going_network' ? 'delivered' : 'completed';
-            
+
             const updatedShipmentFromDb = await updateShipment(shipmentId, { status: newStatusForDb });
 
             if (updatedShipmentFromDb) {
                 handleAlert({ message: "Shipment status updated successfully", isError: false });
-                
+
                 // 2. Actualizar el estado local, aplicando la lógica a nivel del mapeo
                 setShipments(prevShipments => {
                     const updatedShipments = prevShipments.map(s => {
@@ -128,7 +128,7 @@ const OrderDetailPage = () => {
             <div className="max-w-4xl mx-auto">
                 <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 mb-8">
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Order Details</h1>
-                    <p className="text-gray-500 dark:text-gray-400">Order ID: {order._id.toString()}</p>
+                    <p className="text-gray-500 dark:text-gray-400">Order ID: {order._id?.toString()}</p>
                     <p className="text-gray-500 dark:text-gray-400">Date: {new Date(order.date).toLocaleDateString()}</p>
                     <p className="text-gray-500 dark:text-gray-400">Status: <span className="font-medium text-primary">{order.status}</span></p>
                 </div>
@@ -143,12 +143,11 @@ const OrderDetailPage = () => {
                 </div>
                 <div className="space-y-4">
                     {shipments.map(shipment => (
-                        <ShipmentCard 
-                            key={shipment._id.toString()} 
-                            shipment={shipment} 
-                            isBuyer={!isSellerOfOrder} 
-                            isSeller={isSellerOfOrder} 
-                            onShowQR={handleShowQR} 
+                        <ShipmentCard
+                            key={shipment._id.toString()}
+                            shipment={shipment}
+                            isSeller={isSellerOfOrder}
+                            onShowQR={handleShowQR}
                         />
                     ))}
                 </div>

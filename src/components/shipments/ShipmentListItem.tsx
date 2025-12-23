@@ -6,7 +6,7 @@ import Link from 'next/link';
 // A badge component for displaying status
 const StatusBadge = ({ status }: { status: string }) => {
   const baseClasses = "px-2 py-1 text-xs font-semibold rounded-full";
-  const statusClasses = {
+  const statusClasses: Record<string, string> = {
     pending: "bg-yellow-200 text-yellow-800",
     ready_to_ship: "bg-blue-200 text-blue-800",
     in_transit: "bg-indigo-200 text-indigo-800",

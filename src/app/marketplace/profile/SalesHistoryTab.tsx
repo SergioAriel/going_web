@@ -27,7 +27,7 @@ export const SalesHistoryTab = () => {
       ) : salesOrders.length > 0 ? (
         <div className="space-y-4">
           {salesOrders.map((order) => (
-            <OrderCard key={order._id.toString()} order={order} isSeller />
+            <OrderCard key={order._id?.toString() || Math.random().toString()} order={order} isSeller />
           ))}
         </div>
       ) : (

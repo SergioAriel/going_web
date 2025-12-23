@@ -46,7 +46,7 @@ export const PurchaseHistoryTab = () => {
       ) : ordersBuyer.length > 0 ? (
         <div className="space-y-4">
           {ordersBuyer.map((order) => (
-            <OrderCard key={order._id.toString()} order={order} isBuyer />
+            <OrderCard key={order._id?.toString() || Math.random().toString()} order={order} isBuyer />
           ))}
         </div>
       ) : (

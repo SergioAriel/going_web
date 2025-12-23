@@ -7,7 +7,7 @@ function decodePolyline(encoded: string): [number, number][] {
     if (!encoded) {
         return [];
     }
-    let poly = [];
+    let poly: [number, number][] = [];
     let index = 0, len = encoded.length;
     let lat = 0, lng = 0;
     while (index < len) {
@@ -61,7 +61,7 @@ export async function getShipmentRoute(waypoints: Coordinate[]): Promise<[number
 
         const geometry = data.routes[0].geometry;
         const decodedRoute = decodePolyline(geometry);
-        
+
         return decodedRoute;
 
     } catch (error) {

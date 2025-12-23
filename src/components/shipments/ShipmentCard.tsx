@@ -35,21 +35,20 @@ export const ShipmentCard: React.FC<ShipmentCardProps> = ({ shipment, isSeller, 
 
   const handleModalSubmit = async () => {
     if (shipment.shippingType === 'self_delivery') {
-        const result = await updateShipment(shipment._id.toString(), {
-            status: 'completed',
-            deliveryDetails: {
-                ...(shipment as SelfDeliveryShipment).deliveryDetails,
-                status: 'delivered',
-                confirmedDeliveryDays: confirmedDeliveryDays,
-            }
-        });
-
-        if (result?.status) {
-            handleAlert({ message: "Self-delivery shipment marked as completed", isError: false });
-        } else {
-            handleAlert({ message: "Failed to mark shipment as completed", isError: true });
+      const result = await updateShipment(shipment._id.toString(), {
+        status: 'completed',
+        deliveryDetails: {
+          ...(shipment as SelfDeliveryShipment).deliveryDetails,
+          confirmedDeliveryDays: confirmedDeliveryDays,
         }
-        setIsModalOpen(false);
+      });
+
+      if (result?.status) {
+        handleAlert({ message: "Self-delivery shipment marked as completed", isError: false });
+      } else {
+        handleAlert({ message: "Failed to mark shipment as completed", isError: true });
+      }
+      setIsModalOpen(false);
     }
   };
 

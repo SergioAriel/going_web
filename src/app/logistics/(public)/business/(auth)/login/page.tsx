@@ -8,7 +8,7 @@ import { useUser } from '@/context/UserContext';
 const LoginPage = () => {
   const router = useRouter();
   const { login, authenticated } = usePrivy();
-  const { user: appUser, isLoading } = useUser();
+  const { userData: appUser, loading: isLoading } = useUser();
 
   useEffect(() => {
     // Wait for Privy auth to be ready
