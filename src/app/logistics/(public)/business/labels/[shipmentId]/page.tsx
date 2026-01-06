@@ -45,7 +45,12 @@ export default function LabelPage() {
             if (res && res.status) { // Checking if res is truthy and res.status is valid
                 handleAlert({ message: "Shipment marked as Ready for Pickup!", isError: false });
                 // Optionally redirect back or reload
-                setShipment(prev => prev ? ({ ...prev, status: 'ready_to_ship' }) : null);
+                setShipment(prev => {
+                    if (prev && prev.shippingType === 'going_network') {
+                        return { ...prev, status: 'ready_to_ship' };
+                    }
+                    return prev;
+                });
             } else {
                 handleAlert({ message: "Failed to update shipment status.", isError: true });
             }
