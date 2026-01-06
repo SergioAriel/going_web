@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
-import { getShipmentById } from '@/lib/ServerActions/shipments';
+import { getShipment } from '@/lib/ServerActions/shipments';
 import QRCode from 'react-qr-code';
 import toast from 'react-hot-toast';
 
@@ -22,7 +22,7 @@ export default function PublicTrackingPage() {
     useEffect(() => {
         const fetchShipment = async () => {
             try {
-                const data = await getShipmentById(shipmentId);
+                const data = await getShipment(shipmentId);
                 if (data) {
                     setShipment(data);
                 }
@@ -113,10 +113,10 @@ export default function PublicTrackingPage() {
                     </div>
                     <div className="h-64 relative z-0">
                         <ShipmentMap
-                            pickupLat={shipment.pickupLat}
-                            pickupLon={shipment.pickupLon}
-                            deliveryLat={shipment.deliveryLat}
-                            deliveryLon={shipment.deliveryLon}
+                            pickupCoords={[shipment.pickupAddress?.lat || 0, shipment.pickupAddress?.lon || 0]}
+                            deliveryCoords={[shipment.deliveryAddress?.lat || 0, shipment.deliveryAddress?.lon || 0]}
+                            pickupAddress={shipment.pickupAddress?.fullName || 'Punto de Retiro'}
+                            deliveryAddress={shipment.deliveryAddress?.fullName || 'Punto de Entrega'}
                         // We can add driver location here later if public socket is enabled
                         />
                     </div>
