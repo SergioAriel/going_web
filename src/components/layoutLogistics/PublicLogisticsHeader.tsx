@@ -31,7 +31,7 @@ const PublicLogisticsHeader = () => {
             <Link href="/logistics/business" className="text-gray-600 dark:text-gray-300 hover:text-primary px-4">For Business</Link>
           )}
           <Link href="/logistics/drive" className="text-gray-600 dark:text-gray-300 hover:text-primary px-4">Drive with Us</Link>
-          <Link href="/" className="text-gray-600 dark:text-gray-300 hover:text-primary px-4">Marketplace</Link>
+          <Link href="/marketplace" className="text-gray-600 dark:text-gray-300 hover:text-primary px-4">Marketplace</Link>
           {pathname !== '/logistics/business' && (
             <button onClick={login} className="bg-primary text-white rounded-md px-4 py-2 hover:bg-primary-dark ml-4">Login</button>
           )}

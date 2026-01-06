@@ -54,42 +54,67 @@ export const ShipmentCard: React.FC<ShipmentCardProps> = ({ shipment, isSeller, 
 
   return (
     <>
-      <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-        <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 flex flex-col sm:flex-row sm:justify-between sm:items-center">
+      <div className={`border rounded-lg overflow-hidden ${shipment.status === 'failed' ? 'border-red-500 ring-2 ring-red-200' : 'border-gray-200 dark:border-gray-700'}`}>
+        <div className={`px-4 py-3 flex flex-col sm:flex-row sm:justify-between sm:items-center 
+              ${shipment.status === 'failed' ? 'bg-red-50 dark:bg-red-900/30' : 'bg-gray-50 dark:bg-gray-700'}`}>
           <div className="flex-grow">
             <div className="flex items-center flex-wrap">
-              <span className="text-gray-900 dark:text-white font-medium mr-2">Shipment for Order {shipment.orderId}</span>
+              <span className="text-gray-900 dark:text-white font-medium mr-2">
+                Shipment {shipment.shortCode ? <span className="bg-gray-200 text-gray-800 text-xs font-bold px-2 py-0.5 rounded mx-1">{shipment.shortCode}</span> : null}
+                for Order {shipment.orderId}
+              </span>
               <span className="mx-2 text-gray-500 dark:text-gray-400 hidden sm:inline">•</span>
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-2 sm:mt-0
                 ${shipment.status === "delivered" || shipment.status === "completed"
                   ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
                   : shipment.status === "in_transit"
                     ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-                    : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+                    : shipment.status === "failed"
+                      ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+                      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
                 }`}
               >
                 {shipment.status}
               </span>
+
+              {/* Show Failure Reason Inline if Failed */}
+              {shipment.status === 'failed' && (
+                <span className="ml-2 text-xs text-red-600 dark:text-red-400 font-bold">
+                  ⚠️ {(shipment as any).failureReason || 'Delivery Failed. Please check address.'}
+                </span>
+              )}
+
             </div>
           </div>
           <div className="mt-2 sm:mt-0 flex items-center">
-            {isSeller && onShowQR && (
-              <button onClick={() => onShowQR(shipment._id.toString())} className="text-primary hover:text-primary-dark mr-4">
-                <QrCodeIcon className="h-6 w-6" />
-              </button>
+
+            {isSeller ? (
+              <Link href={`/logistics/shipments/${shipment._id.toString()}`} className="text-primary hover:text-primary-dark flex items-center">
+                Manage Shipment
+                <ArrowRightIcon className="h-4 w-4 ml-1" />
+              </Link>
+            ) : (
+              // Buyer Link -> Public Tracking Page
+              <Link href={`/tracking/${shipment._id.toString()}`} className="text-primary hover:text-primary-dark flex items-center">
+                Seguir Envío
+                <ArrowRightIcon className="h-4 w-4 ml-1" />
+              </Link>
             )}
-            <Link href={`/order/${shipment.orderId}?shipmentId=${shipment._id.toString()}`} className="text-primary hover:text-primary-dark flex items-center">
-              View Details
-              <ArrowRightIcon className="h-4 w-4 ml-1" />
-            </Link>
-            {isSeller && shipment.status === 'pending' && (
+
+
+
+
+
+            {/* ERROR RECOVERY ACTION */}
+            {isSeller && shipment.status === 'failed' && (
               <button
-                onClick={handleProcessShipment}
-                className="ml-4 bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded"
+                onClick={() => handleAlert({ message: "Address Edit feature coming in Street Reality update.", isError: false })}
+                className="ml-4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded flex items-center"
               >
-                Process Shipment
+                <span>Fix Address</span>
               </button>
             )}
+
           </div>
         </div>
         <div className="p-4">

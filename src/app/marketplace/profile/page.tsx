@@ -6,13 +6,13 @@ import {
   UserIcon,
   ShoppingBagIcon,
   CreditCardIcon,
-  TruckIcon,
   ArrowRightStartOnRectangleIcon,
   ArrowLeftEndOnRectangleIcon,
   CogIcon,
   CubeIcon,
   HomeIcon,
-  TagIcon // Using TagIcon for sales, seems appropriate
+  TagIcon,
+  RocketLaunchIcon // For Business Dashboard Link
 } from "@heroicons/react/24/outline";
 import { useLogin, useLogout, usePrivy } from "@privy-io/react-auth";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -22,7 +22,7 @@ import { PaymentTab } from "./PaymentTab";
 import { AddressesTab } from "./AddressesTab";
 import { NotificationsTab } from "./NotificationsTab";
 import { SettingsTab } from "./SettingsTab";
-import { ShipmentsTab } from "./ShipmentsTab";
+// ShipmentsTab removed. Use Business Dashboard.
 import { useUser } from "@/context/UserContext";
 import { PurchaseHistoryTab } from "./PurchaseHistoryTab";
 import { SalesHistoryTab } from "./SalesHistoryTab";
@@ -39,7 +39,7 @@ const baseTabs = [
 const sellerTabs = [
   { id: "my-products", name: "My Products", icon: CubeIcon },
   { id: "sales-history", name: "My Sales", icon: TagIcon },
-  { id: "shipments", name: "Shipments", icon: TruckIcon },
+  // Shipments moved to Business Dashboard
 ];
 
 const ProfileContent = () => {
@@ -85,7 +85,6 @@ const ProfileContent = () => {
     notifications: <NotificationsTab />,
     'my-products': <ProductsTab />,
     'sales-history': <SalesHistoryTab />,
-    shipments: <ShipmentsTab />,
     settings: <SettingsTab />,
   };
 
@@ -128,21 +127,32 @@ const ProfileContent = () => {
               <div className="space-y-1">
                 {
                   displayedTabs.map((tab) => (
-                      <button
-                        key={tab.id}
-                        onClick={() => router.push(`/marketplace/profile?tab=${tab.id}`)}
-                        disabled={!authenticated && tab.id !== 'settings'}
-                        className={
-                          `w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed 
+                    <button
+                      key={tab.id}
+                      onClick={() => router.push(`/marketplace/profile?tab=${tab.id}`)}
+                      disabled={!authenticated && tab.id !== 'settings'}
+                      className={
+                        `w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed 
                           ${activeTab === tab.id ? "bg-primary text-white" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}
                         `
-                        }
-                      >
-                        <tab.icon className="h-5 w-5" />
-                        <span>{tab.name}</span>
-                      </button>
+                      }
+                    >
+                      <tab.icon className="h-5 w-5" />
+                      <span>{tab.name}</span>
+                    </button>
                   ))
                 }
+
+                {/* Logistics / Business Dashboard Link */}
+                {authenticated && userData?.isSeller && (
+                  <a
+                    href="/logistics/dashboard"
+                    className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors border-t border-gray-200 dark:border-gray-700 mt-2 pt-2"
+                  >
+                    <RocketLaunchIcon className="h-5 w-5" />
+                    <span className="font-semibold">Manage Shipments</span>
+                  </a>
+                )}
                 {/* Logout/Login Button */}
                 {
                   !authenticated ?

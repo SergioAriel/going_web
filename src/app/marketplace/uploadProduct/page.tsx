@@ -12,6 +12,7 @@ import {
 import Image from "next/image";
 import { usePrivy } from "@privy-io/react-auth";
 import { Address, NewProductPayload } from "@/interfaces";
+import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { useAlert } from "@/context/AlertContext";
 import { useCurrencies } from "@/context/CurrenciesContext";
 import { useUser } from "@/context/UserContext";
@@ -47,6 +48,7 @@ const UploadProduct = () => {
     pickupAddress: { street: "", city: "", state: "", zipCode: "", country: "" } as Omit<Address, 'fullName'>,
   });
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [useNewAddress, setUseNewAddress] = useState(false);
   const { listCryptoCurrencies } = useCurrencies()
 
   const { handleAlert } = useAlert()
@@ -150,6 +152,9 @@ const UploadProduct = () => {
 
     const isValid = requiredFields.every(field => {
       const value = infoProduct[field as keyof typeof infoProduct];
+      if (field === 'pickupAddress') {
+        return !!(value as any)?.street;
+      }
       if (Array.isArray(value)) return value.length > 0;
       return value !== "" && value !== "0";
     });
@@ -290,22 +295,76 @@ const UploadProduct = () => {
                     <label htmlFor="pickupAddress" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Pickup Address *
                     </label>
-                    <div className="relative">
-                      <select
-                        id="pickupAddress"
-                        name="pickupAddress"
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white appearance-none"
-                        required
-                        defaultValue=""
-                      >
-                        <option value="" disabled>Select a pickup address</option>
-                        {userData?.addresses && userData.addresses.map((address, index) => (
-                          <option key={index} value={index}>{address.fullName}</option>
-                        ))}
-                      </select>
-                      <ChevronDownIcon className="h-5 w-5 text-gray-400 absolute right-3 top-3 pointer-events-none" />
+                    <div className="mb-2 flex items-center gap-4">
+                      <label className="flex items-center text-sm">
+                        <input
+                          type="radio"
+                          name="addressType"
+                          checked={!useNewAddress}
+                          onChange={() => setUseNewAddress(false)}
+                          className="mr-2"
+                        />
+                        Saved Address
+                      </label>
+                      <label className="flex items-center text-sm">
+                        <input
+                          type="radio"
+                          name="addressType"
+                          checked={useNewAddress}
+                          onChange={() => setUseNewAddress(true)}
+                          className="mr-2"
+                        />
+                        New Address (Google Maps)
+                      </label>
                     </div>
+
+                    {!useNewAddress ? (
+                      <div className="relative">
+                        <select
+                          id="pickupAddress"
+                          name="pickupAddress"
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white appearance-none"
+                          required={!useNewAddress}
+                          defaultValue=""
+                        >
+                          <option value="" disabled>Select a pickup address</option>
+                          {userData?.addresses && userData.addresses.map((address, index) => (
+                            <option key={index} value={index}>{address.fullName}</option>
+                          ))}
+                        </select>
+                        <ChevronDownIcon className="h-5 w-5 text-gray-400 absolute right-3 top-3 pointer-events-none" />
+                      </div>
+                    ) : (
+                      <div className="relative z-50">
+                        <AddressAutocomplete
+                          onSelect={(data) => {
+                            if (data.extracted) {
+                              setInfoProduct(prev => ({
+                                ...prev,
+                                // Auto-fill generic location
+                                location: data.extracted!.city || data.address,
+                                pickupAddress: {
+                                  street: data.extracted!.street,
+                                  city: data.extracted!.city,
+                                  state: data.extracted!.state,
+                                  zipCode: data.extracted!.zipCode,
+                                  country: data.extracted!.country,
+                                  lat: data.lat,
+                                  lon: data.lon,
+                                }
+                              }));
+                            }
+                          }}
+                          placeholder="Search precise address (Google)..."
+                        />
+                        {infoProduct.pickupAddress.street && (
+                          <p className="text-xs text-green-600 mt-1">
+                            Selected: {infoProduct.pickupAddress.street}, {infoProduct.pickupAddress.city}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {infoProduct.shippingType === 'self_delivery' && (

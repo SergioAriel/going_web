@@ -4,6 +4,7 @@ import { Address } from "@/interfaces";
 import { updateUser } from "@/lib/ServerActions/users";
 import { PencilIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
+import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 
 export const AddressesTab = () => {
   const { userData, setUserData } = useUser()
@@ -169,14 +170,22 @@ export const AddressesTab = () => {
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <input
-                  type="text"
-                  name="address"
-                  value={address.street}
-                  onChange={(e) => setAddress({ ...address, street: e.target.value })}
-                  placeholder="Street Address"
-                  autoComplete="street-address"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                <AddressAutocomplete
+                  defaultValue={address.street}
+                  onSelect={(data) => {
+                    setAddress({
+                      ...address,
+                      street: data.extracted?.street || data.address,
+                      city: data.extracted?.city || address.city,
+                      state: data.extracted?.state || address.state,
+                      zipCode: data.extracted?.zipCode || address.zipCode,
+                      country: data.extracted?.country || address.country, // data.extracted.country IS THE ONE
+                      lat: data.lat,
+                      lon: data.lon
+                    });
+                  }}
+                  placeholder="Search Street Address (Google)"
+                  className="w-full"
                 />
                 <input
                   type="text"
