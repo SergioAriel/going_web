@@ -2,6 +2,8 @@
 
 import { usePrivy } from '@privy-io/react-auth';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
+import { useSocket } from '@/context/SocketContext';
 import { useEffect, useState } from 'react';
 import { Shipment } from '@/interfaces';
 import dynamic from 'next/dynamic';
@@ -20,20 +22,24 @@ const ShipmentDetailPage = () => {
   const router = useRouter();
   const params = useParams();
   const { ready, authenticated } = usePrivy();
+  const socket = useSocket();
 
   const [shipment, setShipment] = useState<Shipment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [route, setRoute] = useState<LatLngExpression[]>([]);
+  const [driverLocation, setDriverLocation] = useState<LatLngExpression | undefined>(undefined);
 
   const shipmentId = params._id as string;
 
   useEffect(() => {
+    // ... existing auth check ...
     if (ready && !authenticated) {
       router.push('/logistics/business/login');
       return;
     }
 
     if (shipmentId) {
+      // Fetch initial data
       const fetchShipment = async () => {
         try {
           const data = await getShipment(shipmentId);
@@ -47,6 +53,31 @@ const ShipmentDetailPage = () => {
       fetchShipment();
     }
   }, [ready, authenticated, router, shipmentId]);
+
+  // Socket Tracking Effect
+  useEffect(() => {
+    if (!socket || !shipmentId) return;
+
+    socket.emit('join_shipment', shipmentId);
+    console.log(`Joined socket room for shipment: ${shipmentId}`);
+
+    const handleLocationUpdate = (data: { lat: number, lon: number, shipmentId: string }) => {
+      console.log("Driver Location Received:", data);
+      if (data.shipmentId === shipmentId) {
+        setDriverLocation([data.lat, data.lon]);
+      }
+    };
+
+    socket.on('driver_location_update', handleLocationUpdate);
+
+    return () => {
+      socket.off('driver_location_update', handleLocationUpdate);
+      socket.emit('leave_shipment', shipmentId);
+    };
+  }, [socket, shipmentId]);
+
+
+
 
   const handleCancel = async () => {
     if (!shipment) return;
@@ -80,12 +111,19 @@ const ShipmentDetailPage = () => {
     if (shipment) {
       const fetchRoute = async () => {
         try {
-          const waypoints = [
-            { lat: shipment.pickupAddress.lat!, lon: shipment.pickupAddress.lon! },
-            { lat: shipment.deliveryAddress.lat!, lon: shipment.deliveryAddress.lon! }
-          ];
-          const osrmRoute = await getShipmentRoute(waypoints);
-          setRoute(osrmRoute);
+          const pLat = shipment.pickupAddress.lat;
+          const pLon = shipment.pickupAddress.lon;
+          const dLat = shipment.deliveryAddress.lat;
+          const dLon = shipment.deliveryAddress.lon;
+
+          if (pLat && pLon && dLat && dLon) {
+            const waypoints = [
+              { lat: pLat, lon: pLon },
+              { lat: dLat, lon: dLon }
+            ];
+            const osrmRoute = await getShipmentRoute(waypoints);
+            setRoute(osrmRoute);
+          }
         } catch (error) {
           console.error("Failed to fetch OSRM route:", error);
           // If fetching fails, the map will fall back to a straight line.
@@ -110,30 +148,40 @@ const ShipmentDetailPage = () => {
       </h1>
       <div className="flex justify-between items-center mb-8">
         <p className="text-sm text-gray-400">ID: {shipment._id}</p>
-        {shipment.status === 'ready_to_ship' && (
-          <div className="flex gap-2">
-            <button
-              onClick={handleCancel}
-              className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition font-bold"
-            >
-              Cancel
-            </button>
+        <div className="flex gap-2">
+          <Link
+            href={`/logistics/business/labels/${shipment._id}`}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition font-bold flex items-center"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2-4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+            Print Label
+          </Link>
+
+          {shipment.status === 'ready_to_ship' && (
+            <>
+              <button
+                onClick={handleCancel}
+                className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition font-bold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition font-bold"
+              >
+                Delete
+              </button>
+            </>
+          )}
+          {shipment.status === 'cancelled' && (
             <button
               onClick={handleDelete}
               className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition font-bold"
             >
-              Delete
+              Delete Shipment
             </button>
-          </div>
-        )}
-        {shipment.status === 'cancelled' && (
-          <button
-            onClick={handleDelete}
-            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition font-bold"
-          >
-            Delete Shipment
-          </button>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -141,11 +189,12 @@ const ShipmentDetailPage = () => {
         <div className="lg:col-span-2 space-y-8">
           <div className="bg-gray-800 p-6 rounded-lg">
             <ShipmentMap
-              pickupCoords={[shipment.pickupAddress.lat!, shipment.pickupAddress.lon!]}
-              deliveryCoords={[shipment.deliveryAddress.lat!, shipment.deliveryAddress.lon!]}
+              pickupCoords={[shipment.pickupAddress.lat || 0, shipment.pickupAddress.lon || 0]}
+              deliveryCoords={[shipment.deliveryAddress.lat || 0, shipment.deliveryAddress.lon || 0]}
               pickupAddress={`${shipment.pickupAddress.street}, ${shipment.pickupAddress.city}`}
               deliveryAddress={`${shipment.deliveryAddress.street}, ${shipment.deliveryAddress.city}`}
               route={route}
+              driverLocation={driverLocation}
             />
           </div>
 

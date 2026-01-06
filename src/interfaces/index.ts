@@ -14,6 +14,7 @@ export interface Address {
   state: string;
   zipCode: string;
   country: string;
+  number?: string; // Street number, distinct from street name
   lat?: number;
   lon?: number; // Opcional en la entrada, obligatorio en el sistema.
   h3Index?: string; // Level 9 (Legacy/Default)
@@ -121,15 +122,23 @@ export interface BaseShipment {
   shippingType: ShippingType;
   deliveryAddress: GeocodedAddress; // Obligatorio que esté geocodificada
   pickupAddress: GeocodedAddress;   // Obligatorio que esté geocodificada
+  recipientEmail?: string; // Optional (Required only for Business flow initially)
   items: CartItem[];
   createdAt: Date;
   updatedAt: Date;
   price?: number;
+  // [Added] Error Handling Fields
+  failureReason?: string;
+  failedAt?: Date;
+  // [Added] Operational Readiness
+  shortCode?: string;
+  packageCount?: number;
+  deliveryToken?: string;
 }
 
 export interface GoingNetworkShipment extends BaseShipment {
   shippingType: 'going_network';
-  status: 'pending' | 'ready_to_ship' | 'in_transit' | 'shipped' | 'delivered' | 'cancelled';
+  status: 'pending' | 'ready_to_ship' | 'in_transit' | 'shipped' | 'delivered' | 'cancelled' | 'failed';
   deliveryDetails?: {
     driverId: string;
     trackingNumber?: string;
@@ -139,7 +148,7 @@ export interface GoingNetworkShipment extends BaseShipment {
 
 export interface SelfDeliveryShipment extends BaseShipment {
   shippingType: 'self_delivery';
-  status: 'shipped_by_seller' | 'completed' | 'cancelled' | 'dispute';
+  status: 'shipped_by_seller' | 'completed' | 'cancelled' | 'dispute' | 'failed';
   deliveryDetails?: {
     confirmedDeliveryDays: number;
     trackingNumber?: string;
@@ -190,13 +199,20 @@ export interface ApiKey {
 export interface Company {
   _id?: ObjectId | string;
   name: string;
+  taxId: string; // CUIT / RFC / NIT
   ownerUserId: string; // Links to the User who owns this company
+  contactEmail: string;
+  phone?: string;
+  address?: Address;
+  industry?: string;
   billingDetails?: { // Placeholder for Stripe Customer ID, etc.
     customerId?: string;
+    taxCondition?: string;
   };
   shippingCredits: number; // Balance for pre-paid model, in cents or smallest unit
   apiKeys: ApiKey[];
   createdAt: Date;
+  updatedAt: Date;
 }
 
 // --- Payloads y Tipos Auxiliares ---

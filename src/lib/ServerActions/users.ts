@@ -132,3 +132,19 @@ export const saveAddress = async (userId: string, address: any) => {
     const result = await updateUser(userId, { addresses: newAddresses });
     return { success: result.status };
 }
+
+export const deleteAddress = async (userId: string, addressIndex: number) => {
+    if (!userId) return { success: false, message: "User ID required" };
+
+    const user = await getUser(userId);
+    const currentAddresses = user?.addresses || [];
+
+    if (addressIndex < 0 || addressIndex >= currentAddresses.length) {
+        return { success: false, message: "Invalid address index" };
+    }
+
+    const newAddresses = currentAddresses.filter((_, index) => index !== addressIndex);
+
+    const result = await updateUser(userId, { addresses: newAddresses });
+    return { success: result.status };
+}

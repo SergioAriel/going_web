@@ -11,6 +11,16 @@ interface Coordinate {
  * @returns distance in kilometers
  */
 export async function getOsrmDistance(origin: Coordinate, destination: Coordinate): Promise<number> {
+    // Validate coordinates before making request
+    if (
+        typeof origin.lat !== 'number' || typeof origin.lon !== 'number' ||
+        typeof destination.lat !== 'number' || typeof destination.lon !== 'number' ||
+        isNaN(origin.lat) || isNaN(origin.lon) || isNaN(destination.lat) || isNaN(destination.lon)
+    ) {
+        console.error("Invalid coordinates passed to OSRM:", { origin, destination });
+        return 0; // Return 0 distance instead of crashing, or handle as error upstream
+    }
+
     const coordsString = `${origin.lon},${origin.lat};${destination.lon},${destination.lat}`;
     const baseUrl = process.env.OSRM_URL || 'http://localhost:5001';
     const osrmUrl = `${baseUrl}/route/v1/driving/${coordsString}?overview=false`;
@@ -25,11 +35,15 @@ export async function getOsrmDistance(origin: Coordinate, destination: Coordinat
                 if (response.status === 429) { // Too Many Requests
                     throw new Error(`OSRM Rate Limit (429)`);
                 }
-                throw new Error(`OSRM API error: ${response.status}`);
+                const errorText = await response.text();
+                throw new Error(`OSRM API error: ${response.status} - ${errorText} - URL: ${osrmUrl}`);
             }
             const data = await response.json();
 
             if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) {
+                // If OSRM can't find a route (e.g. islands), return straight line or 0? 
+                // For now, let's treat it as a calculation failure but maybe log it.
+                console.warn("OSRM No Route Found:", data);
                 throw new Error("No route found");
             }
 

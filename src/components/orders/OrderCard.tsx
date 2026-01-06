@@ -31,12 +31,19 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, isBuyer, isSeller }
             </div>
           </div>
           <div className="mt-2 sm:mt-0 flex items-center flex-shrink-0">
-            <Link href={`/order/${order._id}?isSeller=${isSeller}`} className="text-primary hover:text-primary-dark flex items-center">
-              View Details
-              <ArrowRightIcon className="h-4 w-4 ml-1" />
-            </Link>
+            {order.shipments && order.shipments.length > 0 ? (
+              <Link href={`/tracking/${order.shipments[0]}`} className="text-primary hover:text-primary-dark flex items-center">
+                Seguir Envío
+                <ArrowRightIcon className="h-4 w-4 ml-1" />
+              </Link>
+            ) : (
+              <Link href={`/marketplace/order/${order._id}?isSeller=${isSeller}`} className="text-primary hover:text-primary-dark flex items-center">
+                Ver Detalles
+                <ArrowRightIcon className="h-4 w-4 ml-1" />
+              </Link>
+            )}
             {isBuyer && order.status === 'payment_pending' && (
-              <Link href={`/checkout?orderId=${order._id}`} className="ml-4 bg-secondary hover:bg-secondary-dark text-white font-bold py-2 px-4 rounded">
+              <Link href={`/marketplace/checkout?orderId=${order._id}`} className="ml-4 bg-secondary hover:bg-secondary-dark text-white font-bold py-2 px-4 rounded">
                 Retry Payment
               </Link>
             )}

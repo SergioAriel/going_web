@@ -9,11 +9,17 @@ import { Shipment, GoingNetworkShipment } from '@/interfaces';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 // Fix Leaflet Icon issue
+// Fix Leaflet Icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
+
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
 L.Icon.Default.mergeOptions({
-    iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png').default,
-    iconUrl: require('leaflet/dist/images/marker-icon.png').default,
-    shadowUrl: require('leaflet/dist/images/marker-shadow.png').default,
+    iconRetinaUrl: markerIcon2x.src,
+    iconUrl: markerIcon.src,
+    shadowUrl: markerShadow.src,
 });
 
 // Custom Driver Icon
@@ -85,13 +91,13 @@ export default function TrackingModal({ shipment, onClose }: TrackingModalProps)
         };
     }, [driverId]);
 
-    const pickupCoords: LatLngExpression = [shipment.pickupAddress.lat, shipment.pickupAddress.lon];
-    const deliveryCoords: LatLngExpression = [shipment.deliveryAddress.lat, shipment.deliveryAddress.lon];
+    const pickupCoords: LatLngExpression = [shipment.pickupAddress.lat || 0, shipment.pickupAddress.lon || 0];
+    const deliveryCoords: LatLngExpression = [shipment.deliveryAddress.lat || 0, shipment.deliveryAddress.lon || 0];
 
     // Center map on driver if available, else midpoint
     const center: LatLngExpression = driverLocation || [
-        (pickupCoords[0] + deliveryCoords[0]) / 2,
-        (pickupCoords[1] + deliveryCoords[1]) / 2,
+        (Number(pickupCoords[0]) + Number(deliveryCoords[0])) / 2 || 0,
+        (Number(pickupCoords[1]) + Number(deliveryCoords[1])) / 2 || 0,
     ];
 
     return (

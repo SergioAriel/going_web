@@ -1,4 +1,4 @@
-const LogoLoading = () => {
+const LogoLoading = ({ className }: { className?: string }) => {
 
     const ellipses = [
         { cx: "145.915", cy: "55.6879", rx: "11.9155", ry: "11.6879", fill: "#792887" },
@@ -26,7 +26,7 @@ const LogoLoading = () => {
     ];
 
     return (
-        <svg width="150" height="150" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg className={className} width="150" height="150" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
             <g filter="url(#filter0_f_32_944)">
                 <path d="M128.208 139.935L146.197 54.5317" stroke="url(#paint0_linear_32_944)" strokeWidth="2.3" />
                 <path d="M128.208 139.935L167.049 194.787" stroke="url(#paint1_linear_32_944)" strokeWidth="2.3" />

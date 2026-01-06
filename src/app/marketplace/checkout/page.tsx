@@ -13,7 +13,7 @@ import {
 } from "@heroicons/react/24/outline";
 import {
   Connection, Transaction, SystemProgram,
-  // LAMPORTS_PER_SOL,
+  LAMPORTS_PER_SOL,
   PublicKey, clusterApiUrl
 } from "@solana/web3.js";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
@@ -25,6 +25,11 @@ import { getOneProduct, getProducts } from "@/lib/ServerActions/products";
 import { CheckoutComplete } from "@/lib/ServerActions/checkout";
 import { useCurrencies } from "@/context/CurrenciesContext";
 import { useUser } from "@/context/UserContext";
+import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
+import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
+import { Shipment } from "@/interfaces";
+import { getShipments } from "@/lib/ServerActions/shipments";
+import { QRCodeSVG } from "qrcode.react";
 
 const Checkout = () => {
   const router = useRouter();
@@ -54,11 +59,16 @@ const Checkout = () => {
   const [orderCompleted, setOrderCompleted] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
   const [checkoutItems, setCheckoutItems] = useState<CartItem[]>([]);
+  const [newShipments, setNewShipments] = useState<Shipment[]>([]);
 
   useEffect(() => {
     if (!checkoutItems || !userCurrency || !listCryptoCurrencies) return;
 
     const total = checkoutItems.reduce((acc, item) => {
+      // Check for availability property (added in loadItems)
+      const isAvailable = (item as any).isAvailable !== false;
+      if (!isAvailable) return acc;
+
       const priceToUse = item.isOffer && item.offerPercentage
         ? item.price * (1 - item.offerPercentage / 100)
         : item.price;
@@ -94,13 +104,33 @@ const Checkout = () => {
         const order = await getOrder(orderId);
         if (order) {
           const productIds = order.items.map((item) => item._id);
-          const products = await getProducts({ _id: { $in: productIds }, publishStatus: "published" });
+          console.log("DEBUG: Order Items IDs:", productIds); // Debug Log
+          // Simplify query to find ANY product by ID, then filter in memory
+          const products = await getProducts({ _id: { $in: productIds } });
+          console.log("DEBUG: Fetched IDs:", products.map(p => p._id));
+
           const updatedItems = order.items.map((item) => {
+            console.log(`DEBUG: Matching item ${item._id} with products...`);
             const product = products.find((p) => p._id === item._id);
-            if (product && product.publishStatus === "published") {
-              return { ...product, quantity: item.quantity };
+
+            // STRICT AVAILABILITY CHECK
+            // Use property 'isAvailable' to track status.
+            // MODIFICATION: Strict check. Only 'published' is allowed. Legacy (undefined) is invalid.
+            const isPublished = product && (product as any).status === "published";
+
+            if (isPublished) {
+              return { ...product, quantity: item.quantity, isAvailable: true };
             }
-            return { ...item, name: `${item.name} (Not Available)`, price: 0, quantity: 0 };
+
+            // UNAVAILABLE: Product missing or unpublished.
+            console.warn(`Product ${item._id} is unavailable (Status: ${(product as any)?.status ?? 'Missing'}).`);
+            return {
+              ...item,
+              // Keep original price for display (so user knows what it was)
+              price: item.price,
+              quantity: item.quantity,
+              isAvailable: false // Mark as unavailable
+            };
           });
           setCheckoutItems(updatedItems);
         }
@@ -162,14 +192,30 @@ const Checkout = () => {
     }
     setLoading(true);
     setPaymentStage("confirmed")
+    setPaymentStage("confirmed")
     try {
-      await CheckoutComplete({ orderId, signature, items: checkoutItems, buyer: { walletAddress: selectedPayment, _id: user.id, address, email, phone: address.phone || "" } });
+      const createdShipmentIds = await CheckoutComplete({ orderId, signature, items: checkoutItems, buyer: { walletAddress: selectedPayment, _id: user.id, address, email, phone: address.phone || "" } });
+
+      if (createdShipmentIds && createdShipmentIds.length > 0) {
+        // Fetch the newly created shipments to get their details (and IDs for QR)
+        // Convert ObjectIds to strings if necessary, though getShipments handles the query
+        const shipmentsData = await getShipments({ _id: { $in: createdShipmentIds } });
+        setNewShipments(shipmentsData);
+      }
+
       setOrderNumber(orderId);
       clearCart();
       setOrderCompleted(true);
       setStep(3);
-    } catch (error) {
+      setOrderCompleted(true);
+      setStep(3);
+    } catch (error: any) {
       console.error("Error completing purchase:", error);
+      handleAlert({
+        message: error.message || "Failed to complete checkout. Please try again.",
+        isError: true
+      });
+      setPaymentStage("error");
     } finally {
       setLoading(false);
     }
@@ -196,37 +242,67 @@ const Checkout = () => {
     setLoading(true);
     setPaymentStage("processing");
 
+    // Safety check: Total Amount must be positive
+    if (totalPrice <= 0) {
+      handleAlert({ message: "Invalid total amount to pay. Please refresh.", isError: true });
+      setLoading(false);
+      setPaymentStage("initial");
+      return;
+    }
+
     try {
-      // 1. Construir el payload que se enviará a la Server Action
-      const orderPayload: NewOrderPayload = {
-        buyer: {
-          walletAddress: wallet.address,
-          _id: userData?._id as string,
-          address,
-          email,
-          phone: address.phone || ""
-        },
-        status: "payment_pending",
-        date: new Date(),
-        sellers: [...new Set(checkoutItems.map((item: CartItem) => item.seller))],
-        items: checkoutItems
-      };
+      let activeOrderId = orderId;
 
-      // 2. Llamar a la Server Action directamente para crear la orden en la DB
-      const orderId = await createPendingOrder(orderPayload);
+      if (!activeOrderId) {
+        // 1. Construir el payload que se enviará a la Server Action
+        const orderPayload: NewOrderPayload = {
+          buyer: {
+            walletAddress: wallet.address,
+            _id: userData?._id as string,
+            address,
+            email,
+            phone: address.phone || ""
+          },
+          status: "payment_pending",
+          date: new Date(),
+          sellers: [...new Set(checkoutItems.map((item: CartItem) => item.seller))],
+          items: checkoutItems
+        };
 
-      if (!orderId) {
-        throw new Error("Order creation failed: No orderId returned from server action.");
+        // 2. Llamar a la Server Action directamente para crear la orden en la DB
+        const createdId = await createPendingOrder(orderPayload);
+        if (!createdId) throw new Error("Order creation failed");
+        activeOrderId = createdId;
       }
 
       // 3. Proceder con la transacción en Solana
       const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
       const { blockhash: recentBlockhash } = await connection.getLatestBlockhash();
 
+      const solCurrency = listCryptoCurrencies.find(c => c.symbol === "SOL");
+      if (!solCurrency || !solCurrency.price) {
+        handleAlert({ message: "Unable to find SOL exchange rate.", isError: true });
+        return;
+      }
+
       const objectPayments = checkoutItems.reduce((acc: { [_: string]: { totalAmount: number } }, item) => {
-        const { addressWallet, price, quantity } = item;
+        const { addressWallet, price, quantity, currency } = item;
+
+        // Skip unavailable items if any slipped through filter
+        if ((item as any).isAvailable === false) return acc;
+
+        // 1. Calculate price in Reference Currency (usually USD)
+        // If item currency is missing, assume USD? Or fail? Let's try to find it.
+        const itemCurrencyRate = listCryptoCurrencies.find(c => c.symbol === currency)?.price || 1; // Default to 1 if not found (risky but fallback)
+
+        const priceInReference = (price * itemCurrencyRate);
+
+        // 2. Convert Reference Currency to SOL
+        // AmountInSOL = AmountInRef / SOLPriceInRef
+        const priceInSOL = priceInReference / solCurrency.price;
+
         acc[addressWallet] = {
-          totalAmount: (acc[addressWallet]?.totalAmount || 0) + (price * quantity)
+          totalAmount: (acc[addressWallet]?.totalAmount || 0) + (priceInSOL * quantity)
         };
         return acc;
       }, {});
@@ -236,7 +312,7 @@ const Checkout = () => {
         return SystemProgram.transfer({
           fromPubkey: new PublicKey(wallet.address),
           toPubkey: new PublicKey(address),
-          lamports: 1, // Placeholder
+          lamports: Math.floor(_totalAmount * LAMPORTS_PER_SOL), // Real SOL Amount
         });
       });
 
@@ -249,7 +325,7 @@ const Checkout = () => {
 
       if (transactionReceipt) {
         // 4. Si la transacción de Solana es exitosa, se finaliza el checkout
-        await completeCheckout(transactionReceipt, orderId);
+        await completeCheckout(transactionReceipt, activeOrderId);
       } else {
         throw new Error("Solana transaction failed to send.");
       }
@@ -275,7 +351,7 @@ const Checkout = () => {
   }, [loading, paymentError, paymentStage])
 
   if (loading) {
-    return <div>Loading...</div>; // Or a proper loading spinner
+    return <LoadingOverlay />;
   }
 
 
@@ -295,6 +371,30 @@ const Checkout = () => {
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               Thank you for your purchase. Your order {orderNumber} has been successfully processed.
             </p>
+
+            {/* NEW: Display QR Codes for the Shipments */}
+            {newShipments.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Your Delivery Codes</h2>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-left">
+                  <p className="text-sm text-yellow-800 font-medium text-center">Please Save this QR Code!</p>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    You must show this code to the driver to receive your delivery.
+                    You can also find it later in <strong>Profile &gt; Purchases</strong>.
+                  </p>
+                </div>
+
+                <div className="grid gap-6 justify-items-center">
+                  {newShipments.map(shipment => (
+                    <div key={shipment._id} className="flex flex-col items-center bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                      <QRCodeSVG value={shipment._id} size={160} />
+                      <p className="mt-2 text-sm font-medium text-gray-500">Tracking: {shipment.shortCode || "..."}</p>
+                      <span className="text-xs text-gray-400 mt-1">Show for Delivery</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Shipping Details</h3>
@@ -327,6 +427,7 @@ const Checkout = () => {
           {/* Progress indicator */}
           <div className="mb-8">
             <div className="flex items-center justify-center">
+              {/* Step 1 */}
               <div className="flex items-center">
                 <div className={`flex items-center justify-center w-10 h-10 rounded-full ${step >= 1 ? "bg-primary text-white" : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                   }`}>
@@ -338,9 +439,11 @@ const Checkout = () => {
                 </div>
               </div>
 
+              {/* Connector 1-2 */}
               <div className={`w-16 sm:w-24 h-1 mx-2 ${step >= 2 ? "bg-primary" : "bg-gray-200 dark:bg-gray-700"
                 }`}></div>
 
+              {/* Step 2 */}
               <div className="flex items-center">
                 <div className={`flex items-center justify-center w-10 h-10 rounded-full ${step >= 2 ? "bg-primary text-white" : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                   }`}>
@@ -352,9 +455,11 @@ const Checkout = () => {
                 </div>
               </div>
 
+              {/* Connector 2-3 */}
               <div className={`w-16 sm:w-24 h-1 mx-2 ${step >= 3 ? "bg-primary" : "bg-gray-200 dark:bg-gray-700"
                 }`}></div>
 
+              {/* Step 3 */}
               <div className="flex items-center">
                 <div className={`flex items-center justify-center w-10 h-10 rounded-full ${step >= 3 ? "bg-primary text-white" : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                   }`}>
@@ -367,6 +472,7 @@ const Checkout = () => {
               </div>
             </div>
           </div>
+
 
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Main content */}
@@ -402,14 +508,22 @@ const Checkout = () => {
                           <label htmlFor="street" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Address
                           </label>
-                          <input
-                            id="street"
-                            name="street"
-                            type="text"
-                            required
-                            value={address.street}
-                            onChange={handleAddressChange}
-                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                          <AddressAutocomplete
+                            defaultValue={address.street}
+                            onSelect={(data) => {
+                              setAddress(prev => ({
+                                ...prev,
+                                street: data.extracted?.street || data.address,
+                                city: data.extracted?.city || prev.city,
+                                state: data.extracted?.state || prev.state,
+                                zipCode: data.extracted?.zipCode || prev.zipCode,
+                                country: data.extracted?.country || prev.country,
+                                lat: data.lat,
+                                lon: data.lon
+                              }));
+                            }}
+                            placeholder="Search your address on Google Maps..."
+                            className="w-full"
                           />
                         </div>
 
@@ -511,7 +625,11 @@ const Checkout = () => {
 
                         <button
                           type="submit"
-                          className="inline-flex items-center px-6 py-3 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors"
+                          disabled={totalPrice <= 0 || loading}
+                          className={`inline-flex items-center px-6 py-3 font-medium rounded-lg transition-colors ${totalPrice > 0 && !loading
+                            ? 'bg-primary hover:bg-primary-dark text-white'
+                            : 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
+                            }`}
                         >
                           Continue to Payment
                         </button>
@@ -632,30 +750,45 @@ const Checkout = () => {
 
                 <div className="p-6">
                   <div className="mb-6">
+                    {/* Warning for unavailable items */}
+                    {checkoutItems.some((item: any) => item.isAvailable === false) && (
+                      <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg flex items-start">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-600 dark:text-yellow-500 mt-0.5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                          Some items are no longer available and have been removed from the total.
+                        </p>
+                      </div>
+                    )}
+
                     <div className="max-h-64 overflow-y-auto">
-                      {checkoutItems.map((item) => (
-                        <div key={item._id.toString()} className="flex items-center py-3 border-b border-gray-200 dark:border-gray-700 last:border-0">
-                          <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-gray-200 dark:border-gray-700">
-                            <Image
-                              src={item.mainImage}
-                              alt={item.name}
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                          <div className="ml-4 flex-1">
-                            <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                              {item.name}
-                            </h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              {item.quantity} x ${item.price.toFixed(2)}
+                      {checkoutItems.map((item: any) => {
+                        const isAvailable = item.isAvailable !== false;
+                        return (
+                          <div key={item._id.toString()} className={`flex items-center py-3 border-b border-gray-200 dark:border-gray-700 last:border-0 ${!isAvailable ? 'opacity-50 grayscale' : ''}`}>
+                            <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-gray-200 dark:border-gray-700">
+                              <Image
+                                src={item.mainImage}
+                                alt={item.name}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                            <div className="ml-4 flex-1">
+                              <h3 className={`text-sm font-medium ${!isAvailable ? 'text-gray-500 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-white'}`}>
+                                {item.name} {!isAvailable && <span className="no-underline ml-1 text-red-500 font-bold">(Unavailable)</span>}
+                              </h3>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {item.quantity} x ${item.price.toFixed(2)}
+                              </p>
+                            </div>
+                            <p className={`text-sm font-medium ${!isAvailable ? 'text-gray-400 dark:text-gray-600 line-through' : 'text-gray-900 dark:text-white'}`}>
+                              ${(item.price * item.quantity).toFixed(2)}
                             </p>
                           </div>
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            ${(item.price * item.quantity).toFixed(2)}
-                          </p>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -707,9 +840,9 @@ const Checkout = () => {
               )}
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+        </div >
+      </div >
+    </div >
   );
 };
 

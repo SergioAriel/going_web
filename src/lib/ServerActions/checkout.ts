@@ -38,10 +38,11 @@ export const CheckoutComplete = async ({ orderId, signature, items, buyer }: Che
   // This ensures the Order document has the H3 indices.
   await updateOrder(orderId, {
     signature,
-    buyer: geocodedBuyer // Update the whole buyer object to include the geocoded address
+    buyer: geocodedBuyer, // Update the whole buyer object to include the geocoded address
+    status: 'processing'
   });
 
   // 3. Create shipments using the geocoded buyer info
-  await createShipments({ items, orderId, buyer: geocodedBuyer });
+  return await createShipments({ items, orderId, buyer: geocodedBuyer });
 
 }

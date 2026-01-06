@@ -89,7 +89,15 @@ export const getOrder = async (orderId: string): Promise<Order | null> => {
 
     if (orderInDb) {
         // Siempre devolver el modelo de Orden limpio a la aplicación
-        return orderInDb;
+        return {
+            ...orderInDb,
+            _id: orderInDb._id.toString(),
+            date: new Date(orderInDb.date).toISOString() as any, // Cast to any to satisfy type if Interface expects Date, but Client expects string
+            items: orderInDb.items.map((item: any) => ({
+                ...item,
+                _id: item._id.toString(),
+            }))
+        } as unknown as Order;
     }
     return null;
 };

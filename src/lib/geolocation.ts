@@ -40,6 +40,21 @@ export const ensureGeocodedAndIndexed = async (address: Address): Promise<Geocod
         return address as GeocodedAddress;
     }
 
+    // Optimization: If we have lat/lon (e.g. from Google Places), calculate H3 and return directly.
+    if (address.lat && address.lon) {
+        const h3Index = h3.latLngToCell(address.lat, address.lon, H3_RESOLUTION);
+        const h3IndexL6 = h3.latLngToCell(address.lat, address.lon, 6);
+        const h3IndexL8 = h3.latLngToCell(address.lat, address.lon, 8);
+        return {
+            ...address,
+            lat: address.lat,
+            lon: address.lon,
+            h3Index,
+            h3IndexL6,
+            h3IndexL8
+        } as GeocodedAddress;
+    }
+
     // If not complete, proceed with geocoding.
     console.log(`Geocoding address with Nominatim: ${address.street}`);
 
@@ -51,14 +66,28 @@ export const ensureGeocodedAndIndexed = async (address: Address): Promise<Geocod
 
     if (address.city && address.country) {
         // Structured query
-        params.append('street', address.street);
+        // Ensure street contains the number if it's separate
+        let street = address.street;
+        if (address.number && !street.includes(address.number)) {
+            street = `${street} ${address.number}`;
+        }
+        params.append('street', street);
+
         params.append('city', address.city);
         if (address.state) params.append('state', address.state);
         if (address.zipCode) params.append('postalcode', address.zipCode);
         params.append('country', address.country);
     } else {
         // Freeform query (best for full address strings)
-        params.append('q', address.street);
+        let q = address.street;
+        if (address.number && !q.includes(address.number)) {
+            q = `${q} ${address.number}`;
+        }
+        // Also append city/country if available but not both (partial structured fallback)
+        if (address.city) q += `, ${address.city}`;
+        if (address.country) q += `, ${address.country}`;
+
+        params.append('q', q);
     }
 
     const url = `https://nominatim.openstreetmap.org/search?${params.toString()}`;
@@ -90,6 +119,10 @@ export const ensureGeocodedAndIndexed = async (address: Address): Promise<Geocod
             const state = addr.state || addr.region || address.state || '';
             const country = addr.country || address.country || 'Unknown Country';
             const zipCode = addr.postcode || address.zipCode || '';
+            const number = addr.house_number || address.number || '';
+            // If street was just the name, update it? No, keep user's street name preference usually, 
+            // but ensuring consistency is good. 
+            // However, Nominatim splits road and house_number.
 
             return {
                 ...address,
@@ -101,7 +134,8 @@ export const ensureGeocodedAndIndexed = async (address: Address): Promise<Geocod
                 city,
                 state,
                 country,
-                zipCode
+                zipCode,
+                number // Ensure we persist the verified number
             };
         } else {
             // The service responded successfully but found no results.

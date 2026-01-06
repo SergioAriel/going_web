@@ -20,7 +20,7 @@ interface BusinessWalletProps {
     totalCost: number;
     shipmentsData: any[];
     pickupAddress: Address;
-    onPaymentSuccess?: () => void;
+    onPaymentSuccess?: (shipments?: any[]) => void;
 }
 
 export default function BusinessWallet({ totalCost, shipmentsData, pickupAddress, onPaymentSuccess }: BusinessWalletProps) {
@@ -136,13 +136,13 @@ export default function BusinessWallet({ totalCost, shipmentsData, pickupAddress
             const signature = await wallet.sendTransaction(transaction, connection);
             await connection.confirmTransaction(signature, 'confirmed');
 
-            // 5. Create Shipments
-            const result = await createDirectShipments(shipmentsData, user.id, pickupAddress, signature);
+            // 5. Create Shipments - CORRECTED ORDER: shipmentsData, userId, signature, pickupAddress
+            const result = await createDirectShipments(shipmentsData, user.id, signature, pickupAddress);
 
             if (result.success) {
                 toast.success(`Payment of $${totalCost.toFixed(2)} USDC successful!`);
                 if (onPaymentSuccess) {
-                    onPaymentSuccess();
+                    onPaymentSuccess(result.shipments);
                 }
                 // Refresh balance
                 await fetchBalance();
