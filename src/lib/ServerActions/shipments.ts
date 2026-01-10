@@ -67,7 +67,7 @@ const sendQrCodeEmail = async (shipmentId: string, recipientEmail: string) => {
         const nodemailer = await import('nodemailer');
         // Import React Email related utilities dynamically to avoid build issues if not used elsewhere
         const { render } = await import('@react-email/render');
-        const { ShipmentNotification } = await import('../../emails/ShipmentNotification');
+        const { ShipmentNotification } = await import('@/emails/ShipmentNotification');
 
         const emailHtml = await render(
             ShipmentNotification({
