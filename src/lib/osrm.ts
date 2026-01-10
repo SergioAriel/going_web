@@ -22,8 +22,11 @@ export async function getOsrmDistance(origin: Coordinate, destination: Coordinat
     }
 
     const coordsString = `${origin.lon},${origin.lat};${destination.lon},${destination.lat}`;
-    const baseUrl = process.env.OSRM_URL || 'http://localhost:5001';
-    const osrmUrl = `${baseUrl}/route/v1/driving/${coordsString}?overview=false`;
+    // Use the main Engine URL defined in .env.local
+    const baseUrl = process.env.NEXT_PUBLIC_GOING_ENGINE_URL || 'http://localhost:3001';
+
+    // Append /osrm to access the proxy in going_engine
+    const osrmUrl = `${baseUrl}/osrm/route/v1/driving/${coordsString}?overview=false`;
 
     const MAX_RETRIES = 3;
     const DELAY_MS = 1000; // 1 second delay between retries

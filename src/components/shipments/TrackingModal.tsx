@@ -2,42 +2,39 @@
 
 import React, { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
-import L, { LatLngExpression } from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { APIProvider, Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
 import { Shipment, GoingNetworkShipment } from '@/interfaces';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-
-// Fix Leaflet Icon issue
-// Fix Leaflet Icon issue
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: markerIcon2x.src,
-    iconUrl: markerIcon.src,
-    shadowUrl: markerShadow.src,
-});
-
-// Custom Driver Icon
-const driverIcon = new L.Icon({
-    iconUrl: 'https://cdn-icons-png.flaticon.com/512/758/758669.png', // Simple car/driver icon
-    iconSize: [35, 35],
-    iconAnchor: [17, 35],
-    popupAnchor: [0, -35]
-});
 
 interface TrackingModalProps {
     shipment: Shipment;
     onClose: () => void;
 }
 
+const Polyline = ({ path, options }: { path: google.maps.LatLngLiteral[], options?: google.maps.PolylineOptions }) => {
+    const map = useMap();
+
+    useEffect(() => {
+        if (!map) return;
+
+        const polyline = new google.maps.Polyline({
+            path,
+            ...options,
+        });
+
+        polyline.setMap(map);
+
+        return () => {
+            polyline.setMap(null);
+        };
+    }, [map, path, options]);
+
+    return null;
+};
+
 export default function TrackingModal({ shipment, onClose }: TrackingModalProps) {
     const [socket, setSocket] = useState<Socket | null>(null);
-    const [driverLocation, setDriverLocation] = useState<LatLngExpression | null>(null);
+    const [driverLocation, setDriverLocation] = useState<[number, number] | null>(null);
     const [driverStatus, setDriverStatus] = useState<string>('Connecting...');
 
     // Extract driverId if it exists (only for Going Network shipments)
@@ -47,30 +44,13 @@ export default function TrackingModal({ shipment, onClose }: TrackingModalProps)
 
     // Initialize Socket
     useEffect(() => {
-        // Connect to Socket Server (Port 4000)
-        // Note: In production, use env var. For now, hardcoded to match recent fix.
-        const newSocket = io('http://localhost:4000');
+        // Connect to Socket Server (Engine)
+        const socketUrl = process.env.NEXT_PUBLIC_GOING_ENGINE_URL || 'http://localhost:3001';
+        const newSocket = io(socketUrl);
 
         newSocket.on('connect', () => {
             console.log('Connected to Tracking Socket');
             setDriverStatus('Waiting for driver updates...');
-
-            // If we knew the driverId, we could emit a 'subscribe' event.
-            // For MVP, we might need to listen to a global broadcast or specific room.
-            // However, the engine emits 'newTask' to specific driver sockets.
-            // It doesn't currently broadcast driver locations to the web dashboard.
-
-            // WORKAROUND: We need the Engine to emit location updates to a room we can join.
-            // Or we poll an API.
-            // Let's assume for now we can listen to 'driverLocationUpdate' if we were the driver, 
-            // but we are the dashboard.
-
-            // CRITICAL GAP: The Engine currently receives 'driverLocationUpdate' FROM the driver,
-            // but it does NOT re-broadcast it to the dashboard.
-            // We need to implement a 'subscribeToShipment' or 'subscribeToDriver' event in the Engine.
-
-            // For this step, I will implement the client-side logic assuming the event exists,
-            // and then I will update the Engine to support it.
 
             if (driverId) {
                 newSocket.emit('track_driver', { driverId });
@@ -91,14 +71,17 @@ export default function TrackingModal({ shipment, onClose }: TrackingModalProps)
         };
     }, [driverId]);
 
-    const pickupCoords: LatLngExpression = [shipment.pickupAddress.lat || 0, shipment.pickupAddress.lon || 0];
-    const deliveryCoords: LatLngExpression = [shipment.deliveryAddress.lat || 0, shipment.deliveryAddress.lon || 0];
+    const pickupAddressStr = shipment.pickupAddress.fullName || 'Pickup';
+    const deliveryAddressStr = shipment.deliveryAddress.fullName || 'Delivery';
 
-    // Center map on driver if available, else midpoint
-    const center: LatLngExpression = driverLocation || [
-        (Number(pickupCoords[0]) + Number(deliveryCoords[0])) / 2 || 0,
-        (Number(pickupCoords[1]) + Number(deliveryCoords[1])) / 2 || 0,
-    ];
+    const pickupPos = { lat: shipment.pickupAddress.lat || 0, lng: shipment.pickupAddress.lon || 0 };
+    const deliveryPos = { lat: shipment.deliveryAddress.lat || 0, lng: shipment.deliveryAddress.lon || 0 };
+    const driverPos = driverLocation ? { lat: driverLocation[0], lng: driverLocation[1] } : undefined;
+
+    const center = driverPos || {
+        lat: (pickupPos.lat + deliveryPos.lat) / 2,
+        lng: (pickupPos.lng + deliveryPos.lng) / 2,
+    };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
@@ -116,43 +99,39 @@ export default function TrackingModal({ shipment, onClose }: TrackingModalProps)
 
                 {/* Map */}
                 <div className="h-[500px] w-full relative">
-                    <MapContainer
-                        center={center}
-                        zoom={12}
-                        scrollWheelZoom={true}
-                        style={{ height: '100%', width: '100%' }}
-                    >
-                        <TileLayer
-                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        />
+                    <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""}>
+                        <Map
+                            defaultCenter={center}
+                            defaultZoom={12}
+                            mapId="TRACKING_MODAL_MAP"
+                            fullscreenControl={false}
+                        >
+                            {/* Pickup Marker */}
+                            <AdvancedMarker position={pickupPos} title={`Pickup: ${pickupAddressStr}`}>
+                                <Pin background={'#2E64FE'} glyphColor={'#FFF'} borderColor={'#0040FF'} />
+                            </AdvancedMarker>
 
-                        {/* Pickup Marker */}
-                        <Marker position={pickupCoords}>
-                            <Popup><strong>Pickup:</strong> {shipment.pickupAddress.fullName}</Popup>
-                        </Marker>
+                            {/* Delivery Marker */}
+                            <AdvancedMarker position={deliveryPos} title={`Delivery: ${deliveryAddressStr}`}>
+                                <Pin background={'#FE2E2E'} glyphColor={'#FFF'} borderColor={'#FF0000'} />
+                            </AdvancedMarker>
 
-                        {/* Delivery Marker */}
-                        <Marker position={deliveryCoords}>
-                            <Popup><strong>Delivery:</strong> {shipment.deliveryAddress.fullName}</Popup>
-                        </Marker>
+                            {/* Driver Marker */}
+                            {driverPos && (
+                                <AdvancedMarker position={driverPos} zIndex={1000} title="Driver">
+                                    <img src="https://cdn-icons-png.flaticon.com/512/758/758669.png" alt="Driver" style={{ width: '35px', height: '35px' }} />
+                                </AdvancedMarker>
+                            )}
 
-                        {/* Driver Marker */}
-                        {driverLocation && (
-                            <Marker position={driverLocation} icon={driverIcon}>
-                                <Popup>Driver Location</Popup>
-                            </Marker>
-                        )}
+                            {/* Route Line (Straight for now) */}
+                            <Polyline path={[pickupPos, deliveryPos]} options={{ strokeColor: 'gray', strokeOpacity: 0.5, strokeWeight: 2, icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 2 }, offset: '0', repeat: '10px' }] }} />
 
-                        {/* Route Line (Straight for now) */}
-                        <Polyline positions={[pickupCoords, deliveryCoords]} pathOptions={{ color: 'gray', dashArray: '5, 10' }} />
-
-                        {/* Driver Path (Dynamic) */}
-                        {driverLocation && (
-                            <Polyline positions={[driverLocation, deliveryCoords]} pathOptions={{ color: '#14BFFB', weight: 4 }} />
-                        )}
-
-                    </MapContainer>
+                            {/* Driver Path (Dynamic) */}
+                            {driverPos && (
+                                <Polyline path={[driverPos, deliveryPos]} options={{ strokeColor: '#14BFFB', strokeOpacity: 0.8, strokeWeight: 4 }} />
+                            )}
+                        </Map>
+                    </APIProvider>
                 </div>
             </div>
         </div>

@@ -1,11 +1,6 @@
 'use client';
 
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-
-// Fix for default icon issue with webpack
-const icon = L.icon({ iconUrl: "/marker-icon.png", iconSize: [25, 41], iconAnchor: [12, 41] });
+import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
 
 interface MapDisplayProps {
     lat: number;
@@ -13,18 +8,23 @@ interface MapDisplayProps {
 }
 
 const MapDisplay = ({ lat, lng }: MapDisplayProps) => {
+    const position = { lat, lng };
+
     return (
-        <MapContainer center={[lat, lng]} zoom={13} style={{ height: '400px', width: '100%' }}>
-            <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            />
-            <Marker position={[lat, lng]} icon={icon}>
-                <Popup>
-                    Current Location
-                </Popup>
-            </Marker>
-        </MapContainer>
+        <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""}>
+            <div style={{ height: '400px', width: '100%' }}>
+                <Map
+                    defaultCenter={position}
+                    defaultZoom={13}
+                    mapId="DEMO_MAP_ID"
+                    fullscreenControl={false}
+                >
+                    <AdvancedMarker position={position}>
+                        <Pin background={'#FBBC04'} glyphColor={'#000'} borderColor={'#000'} />
+                    </AdvancedMarker>
+                </Map>
+            </div>
+        </APIProvider>
     );
 };
 

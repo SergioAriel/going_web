@@ -1,103 +1,89 @@
 'use client';
 
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
-import L, { LatLngExpression } from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { APIProvider, Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
 import { useEffect } from 'react';
 
-// Custom Icons to avoid default icon issues
-const pickupIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
-const deliveryIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
+// Common type from Leaflet usage, keeping it for compatibility
+type LatLngTuple = [number, number];
 
 interface ShipmentMapProps {
-  pickupCoords: LatLngExpression;
-  deliveryCoords: LatLngExpression;
+  pickupCoords: LatLngTuple;
+  deliveryCoords: LatLngTuple;
   pickupAddress: string;
   deliveryAddress: string;
-  route?: LatLngExpression[];
-  driverLocation?: LatLngExpression;
+  route?: LatLngTuple[];
+  driverLocation?: LatLngTuple;
 }
 
+const Polyline = ({ path, options }: { path: google.maps.LatLngLiteral[], options?: google.maps.PolylineOptions }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map) return;
+
+    const polyline = new google.maps.Polyline({
+      path,
+      ...options,
+    });
+
+    polyline.setMap(map);
+
+    return () => {
+      polyline.setMap(null);
+    };
+  }, [map, path, options]);
+
+  return null;
+};
+
 const ShipmentMap = ({ pickupCoords, deliveryCoords, pickupAddress, deliveryAddress, route, driverLocation }: ShipmentMapProps) => {
-  // Fallback straight line if no route is provided
-  const straightLine: LatLngExpression[] = [pickupCoords, deliveryCoords];
 
-  // Determine which polyline to show
-  const polylineToShow = route && route.length > 0 ? route : straightLine;
+  const pickupPos = { lat: pickupCoords[0], lng: pickupCoords[1] };
+  const deliveryPos = { lat: deliveryCoords[0], lng: deliveryCoords[1] };
+  const driverPos = driverLocation ? { lat: driverLocation[0], lng: driverLocation[1] } : undefined;
 
-  // Calculate the center point between the two coordinates to center the map
-  const pickupLatLng = L.latLng(pickupCoords);
-  const deliveryLatLng = L.latLng(deliveryCoords);
-  const center: LatLngExpression = [
-    (pickupLatLng.lat + deliveryLatLng.lat) / 2,
-    (pickupLatLng.lng + deliveryLatLng.lng) / 2,
-  ];
+  // Route path conversion or fallback straight line
+  const routePath = route && route.length > 0
+    ? route.map(p => ({ lat: p[0], lng: p[1] }))
+    : [pickupPos, deliveryPos];
 
-  // Custom Icon for Driver (Simple Dot or reusing default with different popup)
-  // For now using default marker but we could use a custom car icon
-  const driverIcon = new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-  });
+  // Center calculation (basic average)
+  const center = {
+    lat: (pickupPos.lat + deliveryPos.lat) / 2,
+    lng: (pickupPos.lng + deliveryPos.lng) / 2
+  };
 
   return (
-    <MapContainer
-      center={center}
-      zoom={9}
-      scrollWheelZoom={false}
-      style={{ height: '400px', width: '100%', borderRadius: '8px' }}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
+    <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""}>
+      <div style={{ height: '400px', width: '100%', borderRadius: '8px', overflow: 'hidden' }}>
+        <Map
+          defaultCenter={center}
+          defaultZoom={9}
+          mapId="DEMO_MAP_ID"
+          fullscreenControl={false}
+        >
+          {/* Pickup Marker (Blue) */}
+          <AdvancedMarker position={pickupPos} title={`Pickup: ${pickupAddress}`}>
+            <Pin background={'#2E64FE'} glyphColor={'#FFF'} borderColor={'#0040FF'} />
+          </AdvancedMarker>
 
-      {/* Pickup Marker */}
-      <Marker position={pickupCoords} icon={pickupIcon}>
-        <Popup>
-          <strong>Pickup:</strong><br />{pickupAddress}
-        </Popup>
-      </Marker>
+          {/* Delivery Marker (Red) */}
+          <AdvancedMarker position={deliveryPos} title={`Delivery: ${deliveryAddress}`}>
+            <Pin background={'#FE2E2E'} glyphColor={'#FFF'} borderColor={'#FF0000'} />
+          </AdvancedMarker>
 
-      {/* Delivery Marker */}
-      <Marker position={deliveryCoords} icon={deliveryIcon}>
-        <Popup>
-          <strong>Delivery:</strong><br />{deliveryAddress}
-        </Popup>
-      </Marker>
+          {/* Driver Marker (Gold) */}
+          {driverPos && (
+            <AdvancedMarker position={driverPos} zIndex={1000} title="Driver">
+              <Pin background={'#FFD700'} glyphColor={'#000'} borderColor={'#B8860B'} />
+            </AdvancedMarker>
+          )}
 
-      {/* Driver Marker */}
-      {driverLocation && (
-        <Marker position={driverLocation} icon={driverIcon} zIndexOffset={1000}>
-          <Popup>
-            <strong>Driver</strong><br />On the way
-          </Popup>
-        </Marker>
-      )}
-
-      {/* Route Line */}
-      <Polyline pathOptions={{ color: '#14BFFB', weight: 5 }} positions={polylineToShow} />
-
-    </MapContainer>
+          {/* Route Polyline */}
+          <Polyline path={routePath} options={{ strokeColor: '#14BFFB', strokeOpacity: 0.8, strokeWeight: 5 }} />
+        </Map>
+      </div>
+    </APIProvider>
   );
 };
 

@@ -1,5 +1,6 @@
 import { Address, GeocodedAddress } from "@/interfaces";
 import * as h3 from "h3-js";
+import { getGoogleGeocode } from "./googleMaps";
 
 const H3_RESOLUTION = 9;
 
@@ -55,8 +56,43 @@ export const ensureGeocodedAndIndexed = async (address: Address): Promise<Geocod
         } as GeocodedAddress;
     }
 
-    // If not complete, proceed with geocoding.
-    console.log(`Geocoding address with Nominatim: ${address.street}`);
+    // 1. Try Google Geocoding First (Web Strategy)
+    try {
+        let addressString = address.street;
+        if (address.number && !addressString.includes(address.number)) {
+            addressString = `${addressString} ${address.number}`;
+        }
+        if (address.city) addressString += `, ${address.city}`;
+        if (address.country) addressString += `, ${address.country}`;
+
+        console.log(`Geocoding with Google: ${addressString}`);
+        const googleResult = await getGoogleGeocode(addressString);
+
+        if (googleResult) {
+            const h3Index = h3.latLngToCell(googleResult.lat, googleResult.lon, H3_RESOLUTION);
+            const h3IndexL6 = h3.latLngToCell(googleResult.lat, googleResult.lon, 6);
+            const h3IndexL8 = h3.latLngToCell(googleResult.lat, googleResult.lon, 8);
+
+            return {
+                ...address,
+                lat: googleResult.lat,
+                lon: googleResult.lon,
+                h3Index,
+                h3IndexL6,
+                h3IndexL8,
+                city: googleResult.city || address.city,
+                state: googleResult.state || address.state,
+                country: googleResult.country || address.country,
+                zipCode: googleResult.zipCode || address.zipCode,
+                number: googleResult.number || address.number
+            } as GeocodedAddress;
+        }
+    } catch (e) {
+        console.warn("Google Geocoding failed, falling back to Nominatim", e);
+    }
+
+    // 2. Fallback to Nominatim
+    console.log(`Geocoding address with Nominatim (Fallback): ${address.street}`);
 
     const params = new URLSearchParams({
         format: 'json',

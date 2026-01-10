@@ -5,6 +5,7 @@ import client from "../mongodb";
 import { decryptObject, encryptObject } from '../encryption';
 import { ObjectId } from 'mongodb';
 import { getOsrmDistance } from '@/lib/osrm';
+import { getGoogleRouteDistance } from "../googleMaps";
 
 type Buyer = {
     walletAddress: string;
@@ -66,7 +67,7 @@ const sendQrCodeEmail = async (shipmentId: string, recipientEmail: string) => {
         const nodemailer = await import('nodemailer');
         // Import React Email related utilities dynamically to avoid build issues if not used elsewhere
         const { render } = await import('@react-email/render');
-        const { ShipmentNotification } = await import('../../emails/ShipmentNotification');
+        const { ShipmentNotification } = await import('@/emails/ShipmentNotification');
 
         const emailHtml = await render(
             ShipmentNotification({
@@ -266,12 +267,12 @@ export const createDirectShipments = async (shipmentsData: any[], userId: string
         });
 
         // Send Emails Async
-        createdShipments.forEach(s => {
-            if (s.recipientEmail) {
-                // @ts-ignore
-                sendQrCodeEmail(s._id!.toString(), s.recipientEmail).catch(e => console.error(e));
-            }
-        });
+        // REMOVED: Email is now sent by the Engine when the driver scans the package (Handshake).
+        // createdShipments.forEach(s => {
+        //     if (s.recipientEmail) {
+        //          sendQrCodeEmail(s._id!.toString(), s.recipientEmail).catch(e => console.error(e));
+        //     }
+        // });
     }
 
     // Return useful details for the frontend (WhatsApp sharing)
@@ -340,7 +341,7 @@ export async function createRealShipments(orderId: string, items: CartItem[], bu
                         createdAt: new Date(), updatedAt: new Date(), status: 'pending',
                         shortCode, packageCount, deliveryToken,
                     };
-                    if (buyer.email) sendQrCodeEmail(orderId, buyer.email).catch(e => console.error(e));
+                    if (buyer.email) console.log("Email will be sent upon pickup.");
                     return shipment;
                 } else if (shippingType === 'self_delivery') {
                     return {
@@ -522,8 +523,8 @@ export async function calculateRealCosts(shipments: any[]) {
 
         for (const s of shipments) {
             try {
-                // Use OSRM
-                const distanceKm = await getOsrmDistance(
+                // Use Google Maps (Hybrid Strategy for Web/Vercel)
+                const distanceKm = await getGoogleRouteDistance(
                     { lat: s.pickupAddressObj.lat, lon: s.pickupAddressObj.lon },
                     { lat: s.deliveryLat, lon: s.deliveryLon }
                 );
