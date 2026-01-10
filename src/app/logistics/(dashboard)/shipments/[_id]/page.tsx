@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { Shipment } from '@/interfaces';
 import dynamic from 'next/dynamic';
 import { getShipmentRoute } from '@/lib/ServerActions/route';
-import { LatLngExpression } from 'leaflet';
+// import { LatLngExpression } from 'leaflet';
 
 import { getShipment, cancelShipment, deleteShipment } from '@/lib/ServerActions/shipments';
 import toast from 'react-hot-toast';
@@ -26,8 +26,8 @@ const ShipmentDetailPage = () => {
 
   const [shipment, setShipment] = useState<Shipment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [route, setRoute] = useState<LatLngExpression[]>([]);
-  const [driverLocation, setDriverLocation] = useState<LatLngExpression | undefined>(undefined);
+  const [route, setRoute] = useState<[number, number][]>([]);
+  const [driverLocation, setDriverLocation] = useState<[number, number] | undefined>(undefined);
 
   const shipmentId = params._id as string;
 
@@ -68,10 +68,20 @@ const ShipmentDetailPage = () => {
       }
     };
 
+    const handleShipmentUpdate = (data: Shipment) => {
+      console.log("Shipment Updated via Socket:", data);
+      if (data._id === shipmentId) {
+        setShipment(prev => ({ ...prev, ...data })); // Merge update
+        toast.success(`Status updated: ${data.status.replace(/_/g, ' ')}`);
+      }
+    }
+
     socket.on('driver_location_update', handleLocationUpdate);
+    socket.on('shipment_updated', handleShipmentUpdate);
 
     return () => {
       socket.off('driver_location_update', handleLocationUpdate);
+      socket.off('shipment_updated', handleShipmentUpdate);
       socket.emit('leave_shipment', shipmentId);
     };
   }, [socket, shipmentId]);

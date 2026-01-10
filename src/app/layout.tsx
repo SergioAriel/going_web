@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 // import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import "leaflet/dist/leaflet.css";
+
 import client from "@/lib/mongodb";
 import { GlobalProviders } from '@/providers/GlobalProviders';
 import { SocketProvider } from "@/context/SocketContext";
