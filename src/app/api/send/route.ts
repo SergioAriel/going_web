@@ -1,4 +1,4 @@
-import { ConfirmationEmail } from '../../../../emails/confirmation';
+import { ConfirmationEmail } from '@/emails/confirmation';
 import { Resend } from 'resend';
 
 const getResendClient = () => {

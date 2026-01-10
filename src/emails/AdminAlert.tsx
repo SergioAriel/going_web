@@ -6,11 +6,11 @@ interface AdminAlertProps {
     details?: any;
 }
 
-export const AdminAlert: React.FC<Readonly<AdminAlertProps>> = ({
+export const AdminAlert = ({
     driverId,
     message,
     details
-}) => (
+}: AdminAlertProps) => (
     <div style={{ fontFamily: 'sans-serif', padding: '20px' }}>
         <h1 style={{ color: '#D32F2F' }}>🚨 Security Alert</h1>
         <p style={{ fontSize: '16px' }}>

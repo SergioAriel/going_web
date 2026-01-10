@@ -71,7 +71,7 @@ const ShipmentDetailPage = () => {
     const handleShipmentUpdate = (data: Shipment) => {
       console.log("Shipment Updated via Socket:", data);
       if (data._id === shipmentId) {
-        setShipment(prev => ({ ...prev, ...data })); // Merge update
+        setShipment(prev => ({ ...prev, ...(data as any) })); // Merge update
         toast.success(`Status updated: ${data.status.replace(/_/g, ' ')}`);
       }
     }
